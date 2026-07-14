@@ -1,0 +1,41 @@
+---
+title: "D502 Capstone - Data Exploration"
+author: "Marcella Harris"
+date: today
+format: html
+---
+
+```{r}
+# Load the parquet dataset and inspect its structure
+
+#== load arrow package ==
+library(arrow)
+
+#== read parquet file into a dataframe ==
+df <- read_parquet(
+  "data/weather_homicide_nationalagency_df.parquet" #test data
+)
+
+#== preview structure and data types ==
+dplyr::glimpse(df)
+```
+
+```{r}
+# Check how many rows are NA vs. non-NA for agency-level columns.
+
+#== NA values computation ==
+colSums(
+  is.na(
+    df[c(
+      "agency_name",
+      "agency_type",
+      "agency_latitude",
+      "agency_longitude",
+      "ft_sworn",
+      "agency_population",
+      "validated_week_name",
+      "validated_day"
+    )]
+  )
+)
+```

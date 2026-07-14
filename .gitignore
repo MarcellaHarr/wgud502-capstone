@@ -1,0 +1,5 @@
+renv/library/
+.Rproj.user/
+data/raw/
+*.parquet
+.DS_Store
