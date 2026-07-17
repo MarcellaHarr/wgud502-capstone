@@ -290,16 +290,6 @@ three_col_check(
 )
 ```
 
-```{r}
-# works on a completely different dataset by swapping the columns!
-# weather_summaries <- three_col_check(
-#   data = weather_renamed,
-#   col1 = WeatherType,
-#   col2 = Severity,
-#   col3 = Region
-# )
-```
-
 ```{r victim-race-recode}
 #| warning: true
 
@@ -338,11 +328,16 @@ three_col_check(
 )
 ```
 
-```{r}
-# ... .
+```{r view-offrace-counts}
+#| warning: true
 
-#== ... ==
-homicide_renamed %>% count(OffRace)
+# Count offender race categories to confirm which values need collapsing.
+
+#== view raw OffRace category counts ==
+homicide_renamed %>%
+  count(
+    OffRace
+  )
 ```
 
 ```{r offender-race-recode}
@@ -613,7 +608,9 @@ homicide_recoded <- homicide_recoded %>%
   )
 
 #== verify all records received an abbreviation ==
-sum(is.na(homicide_recoded$state_abb))
+sum(
+  is.na(homicide_recoded$state_abb)
+)
 ```
 
 ```{r replace-state-name}
@@ -626,7 +623,7 @@ homicide_recoded <- homicide_recoded %>%
 names(homicide_recoded)
 homicide_recoded %>%
   count(state) %>%
-  nrow() # expect 51 (50 states + DC)
+  nrow()
 ```
 
 ```{r municipal-subset}
@@ -634,12 +631,16 @@ homicide_recoded %>%
 
 #== homicide subset: municipal police only ==
 homicide_municipal <- homicide_recoded %>%
-  filter(Agentype == "Municipal police") %>%
-  rename(city = Agency) # state is already correctly named/formatted now
+  filter(
+    Agentype == "Municipal police"
+  ) %>%
+  rename(city = Agency)
 
 #== geojson subset: local police department only ==
 geojson_municipal <- geojson_derived %>%
-  filter(agency_type == "LOCAL POLICE DEPARTMENT")
+  filter(
+    agency_type == "LOCAL POLICE DEPARTMENT"
+  )
 
 #== join on city + state ==
 municipal_joined <- homicide_municipal %>%
@@ -654,7 +655,10 @@ municipal_joined <- homicide_municipal %>%
 #== sanity checks ==
 nrow(homicide_municipal)
 nrow(municipal_joined)
-sum(is.na(municipal_joined$agency_name)) / nrow(municipal_joined)
+sum(
+  is.na(municipal_joined$agency_name)
+) /
+  nrow(municipal_joined)
 ```
 
 ```{r view-municipal-locale}
@@ -684,14 +688,22 @@ geojson_municipal %>%
 
 #== homicide subset: municipal police only, city standardized to uppercase for matching ==
 homicide_municipal <- homicide_recoded %>%
-  filter(Agentype == "Municipal police") %>%
+  filter(
+    Agentype == "Municipal police"
+  ) %>%
   rename(city = Agency) %>%
-  mutate(city_match = toupper(trimws(city)))
+  mutate(
+    city_match = toupper(trimws(city))
+  )
 
 #== geojson subset: local police department only, same standardization ==
 geojson_municipal <- geojson_derived %>%
-  filter(agency_type == "LOCAL POLICE DEPARTMENT") %>%
-  mutate(agency_city_match = toupper(trimws(agency_city)))
+  filter(
+    agency_type == "LOCAL POLICE DEPARTMENT"
+  ) %>%
+  mutate(
+    agency_city_match = toupper(trimws(agency_city))
+  )
 
 #== join on standardized city + state ==
 municipal_joined <- homicide_municipal %>%
@@ -706,7 +718,10 @@ municipal_joined <- homicide_municipal %>%
 #== view the results ==
 nrow(homicide_municipal)
 nrow(municipal_joined)
-sum(is.na(municipal_joined$agency_name)) / nrow(municipal_joined)
+sum(
+  is.na(municipal_joined$agency_name)
+) /
+  nrow(municipal_joined)
 ```
 
 
@@ -777,30 +792,44 @@ geojson_renamed %>%
 ```{r recode-sentinel-vals}
 #| warning: true
 
-# ... .
+# Recode -999 sentinel to true NA across all numeric column in the geojson data.
 
-#== .. ==
+#== replace -999 with NA ==
 geojson_renamed <- geojson_renamed %>%
-  mutate(across(where(is.numeric), ~ na_if(., -999)))
+  mutate(
+    across(
+      where(is.numeric),
+      ~ na_if(., -999)
+    )
+  )
 
 #== sanity check: confirm the swap worked and no -999 remains ==
 geojson_renamed %>%
   select(where(is.numeric)) %>%
-  summarise(across(everything(), ~ sum(. == -999, na.rm = TRUE))) %>%
+  summarise(
+    across(
+      everything(),
+      ~ sum(. == -999, na.rm = TRUE)
+    )
+  ) %>%
   print(width = Inf)
 
-#== ... ==
-sum(is.na(geojson_renamed$agency_population)) # expect 7462
+#== verify NA counts reflect missigness ==
+sum(
+  is.na(geojson_renamed$agency_population)
+)
 ```
 
 ```{r agency-drilltip}
 #| warning: true
 
-# ... .
+# Investigate which agency types drive the agency_population NA count.
 
-#== ... ==
+#== count missing-population rows by agency type ==
 geojson_renamed %>%
-  filter(is.na(agency_population)) %>%
+  filter(
+    is.na(agency_population)
+  ) %>%
   count(agency_type) %>%
   arrange(desc(n))
 ```
@@ -808,9 +837,9 @@ geojson_renamed %>%
 ```{r rebuild-geojson}
 #| warning: true
 
-# ... .
+# Rebuild geojson_derived on the corrected geojson_renamed dataset.
 
-#== rebuild geojson_derived on top of the corrected geojson_renamed (post -999 -> NA fix) ==
+#== re-derive validated_week_name and validated_day ==
 geojson_derived <- geojson_renamed %>%
   mutate(
     val_date_parsed = parse_date_time(
@@ -826,16 +855,18 @@ geojson_derived <- geojson_renamed %>%
     validated_day = day(val_date_parsed)
   )
 
-#== ... ==
-sum(is.na(geojson_derived$val_date_parsed)) # expect 0, same as before
+#== confirm parsing ==
+sum(
+  is.na(geojson_derived$val_date_parsed)
+)
 ```
 
 ```{r redo-municipal-subset}
 #| warning: true
 
-# Stage 6b: municipal police subset join, re-run with corrected geojson data.
+# Re-run the municipal police subset and join with the corrected geojson data.
 
-#== ... ==
+#== rebuild subset with standardized city casing ==
 geojson_municipal <- geojson_derived %>%
   filter(
     agency_type == "LOCAL POLICE DEPARTMENT"
@@ -846,7 +877,7 @@ geojson_municipal <- geojson_derived %>%
     )
   )
 
-#== ... ==
+#== re-join subsets ==
 municipal_joined <- homicide_municipal %>%
   left_join(
     geojson_municipal,
@@ -856,18 +887,21 @@ municipal_joined <- homicide_municipal %>%
     )
   )
 
-#== ... ==
+#== view counts and match rates ==
 nrow(homicide_municipal)
 nrow(municipal_joined)
-sum(is.na(municipal_joined$agency_population)) / nrow(municipal_joined) # the number that actually matters for your predictor
+sum(
+  is.na(municipal_joined$agency_population)
+) /
+  nrow(municipal_joined)
 ```
 
 ```{r remove-missing-pop}
 #| warning: true
 
-# ... .
+# Remove NA-population agency rows and compare to city and state duplication.
 
-#== after removing NA-population rows, do any city+state pairs still have multiple entries? ==
+#== remove NA-population rows ==
 geojson_municipal %>%
   filter(
     !is.na(agency_population)
@@ -883,9 +917,9 @@ geojson_municipal %>%
 ```{r inspect-rows}
 #| warning: true
 
-# ... .
+# Confirm distinct departments vs. data error for Pittsburgh.
 
-#== look at the actual populated rows behind Pittsburgh ==
+#== view actual populated rows ==
 geojson_municipal %>%
   filter(
     agency_city_match == "PITTSBURGH",
@@ -904,9 +938,9 @@ geojson_municipal %>%
 ```{r pop-agency-match}
 #| warning: true
 
-# ... .
+# Deduplicate geojson_municipal to 1(row)/city+state and keep the largest-population.
 
-#== ... ==
+#== based on per city+state pair ==
 geojson_municipal_dedup <- geojson_municipal %>%
   filter(
     !is.na(agency_population)
@@ -922,8 +956,10 @@ geojson_municipal_dedup <- geojson_municipal %>%
   ) %>%
   ungroup()
 
-#== view rows ==
+#== view deduplication count ==
 nrow(geojson_municipal_dedup)
+
+#== confirm deduplication worked ==
 geojson_municipal_dedup %>%
   count(
     agency_city_match,
@@ -933,12 +969,12 @@ geojson_municipal_dedup %>%
   nrow() # expect 0
 ```
 
-```{r}
+```{r final-municipal-join}
 #| warning: true
 
 # Deduplicated agency vs. municipal police subset join.
 
-#== ... ==
+#== join subsets ==
 municipal_joined <- homicide_municipal %>%
   left_join(
     geojson_municipal_dedup,
@@ -948,11 +984,94 @@ municipal_joined <- homicide_municipal %>%
     )
   )
 
-#== view row results ==
+#== view row counts and NA rates ==
 nrow(homicide_municipal)
 nrow(municipal_joined)
-sum(is.na(municipal_joined$agency_population)) / nrow(municipal_joined)
+sum(
+  is.na(municipal_joined$agency_population)
+) /
+  nrow(municipal_joined)
 ```
 
+```{r county-fips-sample}
+#| warning: true
+
+# Sample real county-related values from both the homicide and geojson datasets.
+
+#== homicide data sample (county+state name string) ==
+homicide_df %>%
+  distinct(
+    CNTYFIPS
+  ) %>%
+  slice_sample(n = 15)
+
+#== geojson data sample (county name string) ==
+geojson_df %>%
+  distinct(
+    COUNTY
+  ) %>%
+  slice_sample(n = 15)
+
+#== geojson data sample (county FIPS numeric) ==
+geojson_df %>%
+  distinct(
+    COUNTYFIPS
+  ) %>%
+  slice_sample(n = 15)
+```
+
+```{r pr-genevieve}
+#| warning: true
+
+# Filter and count the amount of "PR" Puerto Rican and "STE. GENEVIEVE" category values.
+
+#== homicide data (PR value) ==
+homicide_df %>%
+  filter(
+    grepl(
+      ", PR",
+      CNTYFIPS
+    )
+  ) %>%
+  nrow()
+
+#== homicide data (STE. GENEVIEVE value) ==
+homicide_df %>%
+  filter(
+    grepl(
+      "GENEVIEVE",
+      CNTYFIPS,
+      ignore.case = TRUE
+    )
+  ) %>%
+  nrow()
+
+#== geojson data ==
+geojson_df %>%
+  filter(
+    STATE == "PR"
+  ) %>%
+  nrow()
+```
+
+```{r distinct-genevieve}
+#| warning: true
+
+# Inspect the "GENEVIEVE" values found in the homicide data and its other associations.
+
+#== view genevieve distinct values ==
+homicide_df %>%
+  filter(
+    grepl(
+      "GENEVIEVE",
+      CNTYFIPS,
+      ignore.case = TRUE
+    )
+  ) %>%
+  distinct(
+    CNTYFIPS
+  ) %>%
+  print(n = 15)
+```
 
 
