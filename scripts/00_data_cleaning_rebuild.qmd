@@ -1,0 +1,958 @@
+---
+title: "Data Cleaning Rebuild — Raw to Final Master Dataset"
+format: html
+execute:
+  echo: true
+---
+
+```{r load-packages}
+#| echo: true
+#| message: false
+#| warning: true
+
+# Load libraries.
+
+#== packages ==
+library(readr)
+library(dplyr)
+library(lubridate)
+```
+
+```{r load-data-fx}
+#| warning: true
+
+# Create a function to load raw files, and confirm row counts.
+
+#== function computation ==
+load_raw_data <- function(
+  homicide_path = "data/raw/uncleaned_map_homicides_df.csv",
+  geojson_path = "data/raw/uncleaned_geojson_df.csv",
+  weather_path = "data/raw/uncleaned_weather_2017-2020_v3.csv",
+  homicide_rows = 894636,
+  geojson_rows = 23486,
+  weather_rows = 89121
+) {
+  #== homicide file ==
+  homicide_raw <- read_csv(homicide_path)
+  # verify record amount and stop loading if incorrect
+  stopifnot(
+    nrow(
+      homicide_raw
+    ) ==
+      homicide_rows
+  )
+
+  #== geojson/agency file ==
+  geojson_raw <- read_csv(geojson_path)
+  # verify record amount and stop loading if incorrect
+  stopifnot(
+    nrow(
+      geojson_raw
+    ) ==
+      geojson_rows
+  )
+
+  #== weather file ==
+  weather_raw <- read_csv(weather_path)
+  # verify record amount and stop loading if incorrect
+  stopifnot(
+    nrow(
+      weather_raw
+    ) ==
+      weather_rows
+  )
+
+  #== view all record amount ==
+  cat("All raw row counts confirmed.\n")
+
+  #== return all three datasets together in a list ==
+  return(
+    list(
+      homicide = homicide_raw,
+      geojson = geojson_raw,
+      weather = weather_raw
+    )
+  )
+}
+```
+
+```{r call-load-data-fx}
+#| warning: true
+
+# Load the data into a list.
+
+#== assign the load function ==
+raw_data <- load_raw_data()
+
+#== access individual dataframes ==
+homicide_df <- raw_data$homicide
+geojson_df <- raw_data$geojson
+weather_df <- raw_data$weather
+```
+
+```{r col-name-fx}
+#| warning: true
+
+# Create a function to list the dataset columns.
+
+#== column display function ==
+column_list <- function(
+  data1 = homicide_df,
+  data2 = geojson_df,
+  data3 = weather_df
+) {
+  #== extract homicide dataset ==
+  dataset_1 <- data1 %>% names()
+
+  #== extract geojson dataset ==
+  dataset_2 <- data2 %>% names()
+
+  #== extract weather dataset ==
+  dataset_3 <- data3 %>% names()
+
+  #== return all dataset columns ==
+  return(
+    list(
+      homicide_list = dataset_1,
+      geojson_list = dataset_2,
+      weather_list = dataset_3
+    )
+  )
+}
+```
+
+```{r call-col-list-fx}
+#| warning: true
+
+# Inspect the column names of each raw dataset.
+
+#== call the column list function ==
+display_columns <- column_list(
+  data1 = homicide_df,
+  data2 = geojson_df,
+  data3 = weather_df
+)
+display_columns
+```
+
+```{r col-count-fx}
+#| warning: true
+
+# Count the total number of columns to confirm datasets' width and structure.
+
+#== column count computation ==
+check_column_counts <- function(
+  data1 = homicide_renamed,
+  data2 = geojson_renamed,
+  data3 = weather_renamed
+) {
+  #== view first dataset column count ==
+  cols_1 <- ncol(data1)
+
+  #== view second dataset column count ==
+  cols_2 <- ncol(data2)
+
+  #== view third dataset column count ==
+  cols_3 <- ncol(data3)
+
+  #== return all column counts ==
+  return(list(
+    homicide_cols = cols_1,
+    geojson_cols = cols_2,
+    weather_cols = cols_3
+  ))
+}
+```
+
+```{r rename-columns}
+#| warning: true
+
+# Rename columns to target schema.
+
+#== homicide file renames ==
+homicide_renamed <- homicide_df %>%
+  rename(
+    solved_status = Solved,
+    record_month = Month,
+    record_year = Year,
+    victim_age = VicAge,
+    victim_count = VicCount,
+    offender_age = OffAge,
+    offender_count = OffCount,
+    weapon_used = Weapon,
+    relationship_status = Relationship,
+    circumstance_status = Circumstance
+  )
+
+#== geojson/agency file renames ==
+geojson_renamed <- geojson_df %>%
+  rename(
+    agency_name = NAME,
+    agency_type = TYPE,
+    agency_city = CITY,
+    agency_state = STATE,
+    agency_latitude = LATITUDE,
+    agency_longitude = LONGITUDE,
+    ft_sworn = FTSWORN,
+    agency_population = POPULATION
+  )
+
+#== weather file renames + drop API metadata ==
+weather_renamed <- weather_df %>%
+  rename(
+    temp_2m_avg = daily.temperature_2m_mean,
+    relative_humidity_2m_avg = daily.relative_humidity_2m_mean,
+    rain_sum = daily.rain_sum,
+    snowfall_sum = daily.snowfall_sum,
+    daily_time = daily.time,
+    state = state_territory
+  ) %>%
+  select(
+    -c(
+      generationtime_ms,
+      utc_offset_seconds,
+      timezone,
+      timezone_abbreviation,
+      elevation,
+      location_id,
+      starts_with("daily_units")
+    )
+  )
+```
+
+```{r call-col-count-fx}
+#| warning: true
+
+# Check the renamed datasets.
+
+#== call column count function ==
+check_column_counts(
+  homicide_renamed,
+  geojson_renamed,
+  weather_renamed
+)
+```
+
+```{r call-col-list-fx-2}
+#| warning: true
+
+# Check the new column names to confirm the renaming operation worked.
+
+#== call the column list function ==
+display_columns <- column_list(
+  data1 = homicide_renamed,
+  data2 = geojson_renamed,
+  data3 = weather_renamed
+)
+display_columns
+```
+
+```{r df-three-col-count-fx}
+#| warning: true
+
+# Count unique values for three columns in a dataset.
+
+#== column check function ==
+three_col_check <- function(
+  data,
+  col1 = VicEthnic,
+  col2 = VicRace,
+  col3 = VicSex
+) {
+  #== view first column counts ==
+  counts_1 <- data %>% count({{ col1 }})
+
+  #== view second column counts ==
+  counts_2 <- data %>% count({{ col2 }})
+
+  #== view third column counts ==
+  counts_3 <- data %>% count({{ col3 }})
+
+  #== return all summaries ==
+  return(
+    list(
+      first_summary = counts_1,
+      second_summary = counts_2,
+      third_summary = counts_3
+    )
+  )
+}
+```
+
+```{r call-col-check-fx-1}
+#| warning: true
+
+# Count victim ethnicity/race/sex for category breakdown and formatting issues.
+
+#== call category column function ==
+three_col_check(
+  homicide_renamed
+)
+```
+
+```{r}
+# works on a completely different dataset by swapping the columns!
+# weather_summaries <- three_col_check(
+#   data = weather_renamed,
+#   col1 = WeatherType,
+#   col2 = Severity,
+#   col3 = Region
+# )
+```
+
+```{r victim-race-recode}
+#| warning: true
+
+# Recode victim race/ethnic into binary constructs.
+
+#== victim side: filter gender, drop Unknown race, collapse categories, binary-encode ==
+homicide_recoded <- homicide_renamed %>%
+  filter(VicSex == "Female") %>%
+  filter(VicRace != "Unknown") %>%
+  mutate(
+    victim_race_collapsed = case_when(
+      VicRace %in%
+        c(
+          "Asian",
+          "American Indian or Alaskan Native",
+          "Native Hawaiian or Pacific Islander"
+        ) ~ "Other Ethnic",
+      TRUE ~ VicRace # keeps "Black" and "White" as-is
+    ),
+    victim_racial_construct = if_else(
+      victim_race_collapsed == "Black",
+      "Black",
+      "Not Black"
+    )
+  )
+
+#== view recode dataset record count ==
+nrow(homicide_recoded)
+
+#== check recoded and original race constructs ==
+three_col_check(
+  data = homicide_recoded,
+  col1 = victim_race_collapsed,
+  col2 = victim_racial_construct,
+  col3 = VicEthnic
+)
+```
+
+```{r}
+# ... .
+
+#== ... ==
+homicide_renamed %>% count(OffRace)
+```
+
+```{r offender-race-recode}
+#| warning: true
+
+# Recode the offender race/ethnic categories into binary constructs.
+
+#== offender side: keep Unknown as its own category (non-predictor, descriptive only) ==
+homicide_recoded <- homicide_recoded %>%
+  mutate(
+    offender_race_collapsed = case_when(
+      OffRace %in%
+        c(
+          "Asian",
+          "American Indian or Alaskan Native",
+          "Native Hawaiian or Pacific Islander"
+        ) ~ "Other Ethnic",
+      TRUE ~ OffRace # keeps "Black", "White", "Unknown" as-is
+    ),
+    offender_racial_construct = case_when(
+      offender_race_collapsed == "Black" ~ "Black",
+      offender_race_collapsed == "Unknown" ~ "Unknown",
+      TRUE ~ "Not Black"
+    )
+  )
+
+#== check recoded race constructs ==
+three_col_check(
+  data = homicide_recoded,
+  col1 = offender_race_collapsed,
+  col2 = offender_racial_construct,
+  col3 = VicEthnic
+)
+```
+
+```{r view-geojson-dates}
+#| warning: true
+
+# Inspect the current geojson date timestamps and how they're formatted.
+
+#== view sample date values ==
+geojson_renamed %>%
+  select(VAL_DATE) %>%
+  head(5)
+
+#== check date data type ==
+class(geojson_renamed$VAL_DATE)
+```
+
+```{r parse-week-name}
+#| warning: true
+
+# Derive validated_week_name and validated_day from VAL_DATE.
+
+#== parse for weekday fullnmae and numeric value ==
+geojson_derived <- geojson_renamed %>%
+  mutate(
+    val_date_parsed = parse_date_time(
+      VAL_DATE,
+      orders = "a, d b Y H:M:S",
+      tz = "GMT"
+    ),
+    validated_week_name = wday(
+      val_date_parsed,
+      label = TRUE,
+      abbr = FALSE
+    ),
+    validated_day = day(val_date_parsed)
+  )
+
+#== confirm no parsing failures by checking for NAs ==
+sum(is.na(geojson_derived$val_date_parsed))
+
+#== view derived weekname counts ==
+geojson_derived %>% count(validated_week_name)
+```
+
+```{r verify-derived-dates}
+#| warning: true
+
+# Preview derived date/day-of-week columns to confirm they were extracted.
+
+#== view sample derived date features ==
+geojson_derived %>%
+  select(
+    VAL_DATE,
+    validated_week_name,
+    validated_day
+  ) %>%
+  head(5)
+```
+
+```{r view-unused-cols}
+#| warning: true
+
+# Inspect (1st five records, NAs, and value counts) candidate columns before dropping.
+
+#== MSA: metro statistical area column ==
+homicide_renamed %>%
+  select(
+    MSA
+  ) %>%
+  head(5)
+sum(is.na(homicide_renamed$MSA))
+
+#== file date column ==
+homicide_renamed %>%
+  select(
+    FileDate
+  ) %>%
+  head(5)
+sum(is.na(homicide_renamed$FileDate))
+
+#== situation column ==
+homicide_renamed %>%
+  count(
+    Situation
+  )
+
+#== action type column ==
+homicide_renamed %>%
+  count(
+    ActionType
+  )
+
+#== incident column ==
+homicide_renamed %>%
+  select(
+    Incident
+  ) %>%
+  summary()
+```
+
+```{r validate-msa-column}
+#| warning: true
+
+# Reconstruct the metropolitan area categories from the city and state columns, then count rows.
+
+#== verify MSA string alignment ==
+homicide_renamed %>%
+  mutate(
+    msa_reconstructed = paste0(
+      Agency,
+      ", ",
+      State
+    )
+  ) %>%
+  filter(
+    MSA != msa_reconstructed
+  ) %>%
+  nrow()
+```
+
+```{r validate-msa-city}
+#| warning: true
+
+# Extract the city name from the metropolitan area string and verify that it matches the agency name for every record.
+
+#== check agency and msa city alignment ==
+homicide_renamed %>%
+  mutate(
+    msa_city_only = sub(",.*", "", MSA)
+  ) %>%
+  filter(
+    msa_city_only != Agency
+  ) %>%
+  nrow()
+```
+
+```{r drop-homicide-cols}
+#| warning: true
+
+# Drop columns ruled out for analysis, explicitly and documented.
+
+#== drop Subcircum, FileDate, ActionType, MSA ==
+homicide_recoded <- homicide_recoded %>%
+  select(
+    -Subcircum,
+    -FileDate,
+    -ActionType,
+    -MSA
+  )
+
+#== view column count ==
+ncol(homicide_recoded)
+```
+
+```{r recount-recoded-type}
+#| warning: true
+
+# Confirm Agentype categories on the filtered/recoded data.
+
+#== count agent type column ==
+homicide_recoded %>%
+  count(
+    Agentype
+  )
+
+#== view NA amount ==
+sum(is.na(homicide_recoded$Agentype))
+```
+
+```{r view-homi-state-count}
+#| warning: true
+
+# Count first five state records.
+
+#== view sample state counts ==
+homicide_recoded %>%
+  count(
+    State
+  ) %>%
+  head(5)
+```
+
+```{r compare-state-vals}
+#| warning: true
+
+# Identify any state values that do not match built-in states list.
+
+#== check for non-standard state names ==
+setdiff(
+  unique(
+    homicide_recoded$State
+  ),
+  state.name
+)
+```
+
+```{r homi-rhode-island}
+#| warning: true
+
+# Filter for the "Rhodes Island" typo and tally them.
+
+#== count misspelled Rhode Island records ==
+homicide_recoded %>%
+  filter(
+    State == "Rhodes Island"
+  ) %>%
+  nrow()
+```
+
+```{r add-state-abbrv}
+
+# Lookup state names and check if every record matched.
+
+#== create state abbreviation lookup ==
+state_lookup <- tibble(
+  state_name = c(
+    state.name,
+    "District of Columbia",
+    "Rhodes Island"
+  ),
+  state_abb = c(
+    state.abb,
+    "DC",
+    "RI"
+  )
+)
+
+#== join abbreviations to dataset ==
+homicide_recoded <- homicide_recoded %>%
+  left_join(
+    state_lookup,
+    by = c(
+      "State" = "state_name"
+    )
+  )
+
+#== verify all records received an abbreviation ==
+sum(is.na(homicide_recoded$state_abb))
+```
+
+```{r replace-state-name}
+#== replace full state name with abbreviation; drop the now-redundant original ==
+homicide_recoded <- homicide_recoded %>%
+  select(-State) %>%
+  rename(state = state_abb)
+
+#== view the results ==
+names(homicide_recoded)
+homicide_recoded %>%
+  count(state) %>%
+  nrow() # expect 51 (50 states + DC)
+```
+
+```{r municipal-subset}
+#== Municipal police subset join ==
+
+#== homicide subset: municipal police only ==
+homicide_municipal <- homicide_recoded %>%
+  filter(Agentype == "Municipal police") %>%
+  rename(city = Agency) # state is already correctly named/formatted now
+
+#== geojson subset: local police department only ==
+geojson_municipal <- geojson_derived %>%
+  filter(agency_type == "LOCAL POLICE DEPARTMENT")
+
+#== join on city + state ==
+municipal_joined <- homicide_municipal %>%
+  left_join(
+    geojson_municipal,
+    by = c(
+      "city" = "agency_city",
+      "state" = "agency_state"
+    )
+  )
+
+#== sanity checks ==
+nrow(homicide_municipal)
+nrow(municipal_joined)
+sum(is.na(municipal_joined$agency_name)) / nrow(municipal_joined)
+```
+
+```{r view-municipal-locale}
+#| warning: true
+
+# Compare municipal city and state formatting and alignment.
+
+#== view sample homicide location columns ==
+homicide_municipal %>%
+  select(
+    city,
+    state
+  ) %>%
+  head(5)
+
+#== view sample geojson location columns ==
+geojson_municipal %>%
+  select(
+    agency_city,
+    agency_state
+  ) %>%
+  head(5)
+```
+
+```{r standardize-strings}
+# Join and case-normalize the municipal police subset.
+
+#== homicide subset: municipal police only, city standardized to uppercase for matching ==
+homicide_municipal <- homicide_recoded %>%
+  filter(Agentype == "Municipal police") %>%
+  rename(city = Agency) %>%
+  mutate(city_match = toupper(trimws(city)))
+
+#== geojson subset: local police department only, same standardization ==
+geojson_municipal <- geojson_derived %>%
+  filter(agency_type == "LOCAL POLICE DEPARTMENT") %>%
+  mutate(agency_city_match = toupper(trimws(agency_city)))
+
+#== join on standardized city + state ==
+municipal_joined <- homicide_municipal %>%
+  left_join(
+    geojson_municipal,
+    by = c(
+      "city_match" = "agency_city_match",
+      "state" = "agency_state"
+    )
+  )
+
+#== view the results ==
+nrow(homicide_municipal)
+nrow(municipal_joined)
+sum(is.na(municipal_joined$agency_name)) / nrow(municipal_joined)
+```
+
+
+```{r view-city-dups}
+#| warning: true
+
+# Investigate city and state pairs with multiple records and duplicates.
+
+#== find duplicate city and state pairs ==
+geojson_municipal %>%
+  count(
+    agency_city_match,
+    agency_state
+  ) %>%
+  filter(n > 1) %>%
+  arrange(desc(n))
+```
+
+```{r inspect-nyc-agencies}
+#| warning: true
+
+#== look at the actual agency names behind the biggest offender ==
+geojson_municipal %>%
+  filter(
+    agency_city_match == "NEW YORK",
+    agency_state == "NY"
+  ) %>%
+  select(
+    agency_name,
+    agency_type,
+    ft_sworn,
+    agency_population
+  ) %>%
+  print(n = 49)
+```
+
+```{r geojson-placeholder}
+#| warning: true
+
+# Count -999 records (placeholder) in agency population/sworn officer for numerical NaN.
+
+#== count missing population placeholders ==
+sum(geojson_derived$agency_population == -999, na.rm = TRUE)
+
+#== count missing officer placeholders ==
+sum(geojson_derived$ft_sworn == -999, na.rm = TRUE)
+```
+
+```{r scan-placeholders}
+#| warning: true
+
+# Scan all columns at once, count the times -999 appears.
+
+#== count missing placeholders ==
+geojson_renamed %>%
+  select(
+    where(is.numeric)
+  ) %>%
+  summarise(
+    across(
+      everything(),
+      ~ sum(. == -999, na.rm = TRUE)
+    )
+  ) %>%
+  print(width = Inf)
+```
+
+```{r recode-sentinel-vals}
+#| warning: true
+
+# ... .
+
+#== .. ==
+geojson_renamed <- geojson_renamed %>%
+  mutate(across(where(is.numeric), ~ na_if(., -999)))
+
+#== sanity check: confirm the swap worked and no -999 remains ==
+geojson_renamed %>%
+  select(where(is.numeric)) %>%
+  summarise(across(everything(), ~ sum(. == -999, na.rm = TRUE))) %>%
+  print(width = Inf)
+
+#== ... ==
+sum(is.na(geojson_renamed$agency_population)) # expect 7462
+```
+
+```{r agency-drilltip}
+#| warning: true
+
+# ... .
+
+#== ... ==
+geojson_renamed %>%
+  filter(is.na(agency_population)) %>%
+  count(agency_type) %>%
+  arrange(desc(n))
+```
+
+```{r rebuild-geojson}
+#| warning: true
+
+# ... .
+
+#== rebuild geojson_derived on top of the corrected geojson_renamed (post -999 -> NA fix) ==
+geojson_derived <- geojson_renamed %>%
+  mutate(
+    val_date_parsed = parse_date_time(
+      VAL_DATE,
+      orders = "a, d b Y H:M:S",
+      tz = "GMT"
+    ),
+    validated_week_name = wday(
+      val_date_parsed,
+      label = TRUE,
+      abbr = FALSE
+    ),
+    validated_day = day(val_date_parsed)
+  )
+
+#== ... ==
+sum(is.na(geojson_derived$val_date_parsed)) # expect 0, same as before
+```
+
+```{r redo-municipal-subset}
+#| warning: true
+
+# Stage 6b: municipal police subset join, re-run with corrected geojson data.
+
+#== ... ==
+geojson_municipal <- geojson_derived %>%
+  filter(
+    agency_type == "LOCAL POLICE DEPARTMENT"
+  ) %>%
+  mutate(
+    agency_city_match = toupper(
+      trimws(agency_city)
+    )
+  )
+
+#== ... ==
+municipal_joined <- homicide_municipal %>%
+  left_join(
+    geojson_municipal,
+    by = c(
+      "city_match" = "agency_city_match",
+      "state" = "agency_state"
+    )
+  )
+
+#== ... ==
+nrow(homicide_municipal)
+nrow(municipal_joined)
+sum(is.na(municipal_joined$agency_population)) / nrow(municipal_joined) # the number that actually matters for your predictor
+```
+
+```{r remove-missing-pop}
+#| warning: true
+
+# ... .
+
+#== after removing NA-population rows, do any city+state pairs still have multiple entries? ==
+geojson_municipal %>%
+  filter(
+    !is.na(agency_population)
+  ) %>%
+  count(
+    agency_city_match,
+    agency_state
+  ) %>%
+  filter(n > 1) %>%
+  arrange(desc(n))
+```
+
+```{r inspect-rows}
+#| warning: true
+
+# ... .
+
+#== look at the actual populated rows behind Pittsburgh ==
+geojson_municipal %>%
+  filter(
+    agency_city_match == "PITTSBURGH",
+    agency_state == "PA",
+    !is.na(agency_population)
+  ) %>%
+  select(
+    agency_name,
+    agency_type,
+    ft_sworn,
+    agency_population
+  ) %>%
+  print(n = 29)
+```
+
+```{r pop-agency-match}
+#| warning: true
+
+# ... .
+
+#== ... ==
+geojson_municipal_dedup <- geojson_municipal %>%
+  filter(
+    !is.na(agency_population)
+  ) %>%
+  group_by(
+    agency_city_match,
+    agency_state
+  ) %>%
+  slice_max(
+    agency_population,
+    n = 1,
+    with_ties = FALSE
+  ) %>%
+  ungroup()
+
+#== view rows ==
+nrow(geojson_municipal_dedup)
+geojson_municipal_dedup %>%
+  count(
+    agency_city_match,
+    agency_state
+  ) %>%
+  filter(n > 1) %>%
+  nrow() # expect 0
+```
+
+```{r}
+#| warning: true
+
+# Deduplicated agency vs. municipal police subset join.
+
+#== ... ==
+municipal_joined <- homicide_municipal %>%
+  left_join(
+    geojson_municipal_dedup,
+    by = c(
+      "city_match" = "agency_city_match",
+      "state" = "agency_state"
+    )
+  )
+
+#== view row results ==
+nrow(homicide_municipal)
+nrow(municipal_joined)
+sum(is.na(municipal_joined$agency_population)) / nrow(municipal_joined)
+```
+
+
+
