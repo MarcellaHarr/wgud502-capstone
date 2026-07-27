@@ -13,9 +13,12 @@ execute:
 # Load libraries.
 
 #== packages ==
+library(here)
 library(readr)
 library(dplyr)
+library(tidyr)
 library(lubridate)
+library(rmarkdown)
 ```
 
 ```{r load-data-fx}
@@ -25,9 +28,21 @@ library(lubridate)
 
 #== function computation ==
 load_raw_data <- function(
-  homicide_path = "data/raw/uncleaned_map_homicides_df.csv",
-  geojson_path = "data/raw/uncleaned_geojson_df.csv",
-  weather_path = "data/raw/uncleaned_weather_2017-2020_v3.csv",
+  homicide_path = here::here(
+    "data",
+    "raw",
+    "uncleaned_map_homicides_df.csv"
+  ),
+  geojson_path = here::here(
+    "data",
+    "raw",
+    "uncleaned_geojson_df.csv"
+  ),
+  weather_path = here::here(
+    "data",
+    "raw",
+    "uncleaned_weather_2017-2020_v3.csv"
+  ),
   homicide_rows = 894636,
   geojson_rows = 23486,
   weather_rows = 89121
@@ -409,7 +424,9 @@ geojson_derived <- geojson_renamed %>%
   )
 
 #== confirm no parsing failures by checking for NAs ==
-sum(is.na(geojson_derived$val_date_parsed))
+sum(
+  is.na(geojson_derived$val_date_parsed)
+)
 
 #== view derived weekname counts ==
 geojson_derived %>% count(validated_week_name)
@@ -441,7 +458,9 @@ homicide_renamed %>%
     MSA
   ) %>%
   head(5)
-sum(is.na(homicide_renamed$MSA))
+sum(
+  is.na(homicide_renamed$MSA)
+)
 
 #== file date column ==
 homicide_renamed %>%
@@ -449,7 +468,9 @@ homicide_renamed %>%
     FileDate
   ) %>%
   head(5)
-sum(is.na(homicide_renamed$FileDate))
+sum(
+  is.na(homicide_renamed$FileDate)
+)
 
 #== situation column ==
 homicide_renamed %>%
@@ -537,7 +558,9 @@ homicide_recoded %>%
   )
 
 #== view NA amount ==
-sum(is.na(homicide_recoded$Agentype))
+sum(
+  is.na(homicide_recoded$Agentype)
+)
 ```
 
 ```{r view-homi-state-count}
@@ -693,7 +716,9 @@ homicide_municipal <- homicide_recoded %>%
   ) %>%
   rename(city = Agency) %>%
   mutate(
-    city_match = toupper(trimws(city))
+    city_match = toupper(
+      trimws(city)
+    )
   )
 
 #== geojson subset: local police department only, same standardization ==
@@ -702,7 +727,9 @@ geojson_municipal <- geojson_derived %>%
     agency_type == "LOCAL POLICE DEPARTMENT"
   ) %>%
   mutate(
-    agency_city_match = toupper(trimws(agency_city))
+    agency_city_match = toupper(
+      trimws(agency_city)
+    )
   )
 
 #== join on standardized city + state ==
@@ -1073,5 +1100,50 @@ homicide_df %>%
   ) %>%
   print(n = 15)
 ```
+
+```{r split-county-fips}
+#| warning: true
+
+# Parsing columns for a join key (sheriff-type).
+
+#== split CNTYFIPS into name and state ==
+homicide_subset <- homicide_df %>%
+  separate_wider_delim(
+    CNTYFIPS,
+    delim = ", ",
+    names = c(
+      "county_agency",
+      "county_state"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  mutate(
+    county_agency = toupper(
+      trimws(county_agency)
+    )
+  )
+
+#== case normalize Ste. Genevieve category ==
+homicide_subset %>%
+  filter(
+    grepl(
+      "GENEVIEVE",
+      county_agency,
+      ignore.case = TRUE
+    )
+  ) %>%
+  distinct(
+    county_agency
+  ) %>%
+  print(n = 15)
+```
+
+
+
+
+
+
+
 
 

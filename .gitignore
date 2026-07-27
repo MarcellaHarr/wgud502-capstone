@@ -1,5 +1,18 @@
+# renv package library
 renv/library/
+
+# Positron/RStudio session state
 .Rproj.user/
-data/raw/
-*.parquet
+
+# macOS system files
 .DS_Store
+
+# Raw data (not versioned)
+data/raw/
+
+# Pipeline output
+*.parquet
+
+# Quarto render output
+scripts/*.html
+scripts/*_files/
