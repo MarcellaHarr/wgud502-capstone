@@ -1107,7 +1107,7 @@ homicide_df %>%
 # Parsing columns for a join key (sheriff-type).
 
 #== split CNTYFIPS into name and state ==
-homicide_subset <- homicide_df %>%
+homicide_subset <- homicide_recoded %>%
   separate_wider_delim(
     CNTYFIPS,
     delim = ", ",
@@ -1139,7 +1139,24 @@ homicide_subset %>%
   print(n = 15)
 ```
 
+```{r geo-county-countyfips}
+# Rename geojson's county (COUNTY/COUNTYFIPS) columns.
 
+#== rename columns ==
+geojson_derived <- geojson_derived %>%
+  rename(
+    agency_county = COUNTY,
+    agency_county_fips = COUNTYFIPS
+  )
+
+#== view the results ==
+geojson_derived %>%
+  select(
+    agency_county,
+    agency_county_fips
+  ) %>%
+  head(8)
+```
 
 
 
