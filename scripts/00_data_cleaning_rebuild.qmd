@@ -650,6 +650,8 @@ homicide_recoded %>%
 ```
 
 ```{r municipal-subset}
+#| warning: true
+
 #== Municipal police subset join ==
 
 #== homicide subset: municipal police only ==
@@ -1139,14 +1141,21 @@ homicide_subset %>%
   print(n = 15)
 ```
 
-```{r geo-county-countyfips}
-# Rename geojson's county (COUNTY/COUNTYFIPS) columns.
+```{r geo-county-rename}
+#| warning: true
+
+# Rename geojson's county (COUNTY/COUNTYFIPS) columns for the sheriff-type join key.
 
 #== rename columns ==
 geojson_derived <- geojson_derived %>%
   rename(
     agency_county = COUNTY,
     agency_county_fips = COUNTYFIPS
+  ) %>%
+  mutate(
+    agency_county = toupper(
+      trimws(agency_county)
+    )
   )
 
 #== view the results ==
@@ -1157,6 +1166,55 @@ geojson_derived %>%
   ) %>%
   head(8)
 ```
+
+```{r sheriff-subset}
+#| warning: true
+
+# Filter both datasets for the sheriff-type agaencies.
+
+#== homicide subset ==
+homicide_sheriff <- homicide_subset %>%
+  filter(
+    Agentype == "Sheriff"
+  )
+
+#== geojson subset ==
+geojson_sheriff <- geojson_derived %>%
+  filter(
+    agency_type == "SHERIFF'S OFFICE"
+  )
+
+#== view row counts ==
+nrow(homicide_sheriff)
+nrow(geojson_sheriff)
+```
+
+```{r sheriff-join}
+#| warning: true
+
+# Join homicide_/geojson_sheriff datasets.
+
+#== join on county + state ==
+sheriff_joined <- homicide_sheriff %>%
+  left_join(
+    geojson_sheriff,
+    by = c(
+      "county_agency" = "agency_county",
+      "county_state" = "agency_state"
+    )
+  )
+
+#== view row counts ==
+nrow(homicide_sheriff)
+nrow(sheriff_joined)
+
+#== view NA rate ==
+sum(
+  is.na(sheriff_joined$agency_population)
+) /
+  nrow(sheriff_joined)
+```
+
 
 
 
