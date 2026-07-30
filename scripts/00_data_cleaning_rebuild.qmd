@@ -1215,10 +1215,259 @@ sum(
   nrow(sheriff_joined)
 ```
 
+```{r sheriff-diagnostics}
+#| warning: true
 
+# Check geojson_/homicide_sheriff datasets for "county" references in specific columns.
 
+#== check for duplicate pairs ==
+geojson_sheriff %>%
+  count(
+    agency_county,
+    agency_state
+  ) %>%
+  filter(
+    n > 1
+  ) %>%
+  arrange(desc(n))
 
+#== build subsets on county col ==
+homicide_side <- homicide_sheriff %>%
+  distinct(
+    county_agency
+  ) %>%
+  rename(county = county_agency)
 
+geojson_side <- geojson_sheriff %>%
+  distinct(
+    agency_county
+  ) %>%
+  rename(county = agency_county)
 
+#== check for string mismatch ==
+setdiff(
+  homicide_side,
+  geojson_side
+) %>%
+  print(n = 15)
+```
 
+```{r sheriff-diagnostics-2}
+#| warning: true
 
+# Check if duplicates are NA-heavy or disticnt agencies, the amount of mismatches by row.
+
+#== assign the setdiff mismatches ==
+county_mismatch <- setdiff(
+  homicide_side,
+  geojson_side
+)
+
+#== check agency county+state heavy dup ==
+geojson_sheriff %>%
+  filter(
+    agency_county == "HILLSBOROUGH",
+    agency_state == "FL"
+  ) %>%
+  select(
+    agency_name,
+    agency_type,
+    ft_sworn,
+    agency_population
+  ) %>%
+  print(n = 30)
+
+#== check county mismatches by row ==
+homicide_sheriff %>%
+  filter(
+    county_agency %in% county_mismatch$county
+  ) %>%
+  nrow()
+```
+
+```{r remaining-missingness}
+#| warning: true
+
+# Check the remaining NA rates that the mismatches don't explain.
+
+#== view remaining NAs ==
+sheriff_joined %>%
+  filter(
+    is.na(
+      agency_population
+    ),
+    !(county_agency %in% county_mismatch$county)
+  ) %>%
+  nrow()
+```
+
+```{r remaining-mismatches}
+#| warning: true
+
+# Find each county's remaining mismatched state, and compare to the geojson dataset.
+
+#== pair conuty to state ==
+homicide_sheriff %>%
+  filter(
+    county_agency %in%
+      c(
+        "DE KALB",
+        "HAWAII",
+        "KAUAI",
+        "MAUI",
+        "LA PORTE",
+        "DONA ANA",
+        "CARSON CITY CITY",
+        "HAWKINS",
+        "ALBEMARLE",
+        "JAMES CITY"
+      )
+  ) %>%
+  distinct(county_agency, county_state)
+
+#== check Sheriff-type rows ==
+geojson_derived %>%
+  filter(
+    agency_state == "HI"
+  ) %>%
+  count(agency_type)
+
+#== list Sheriff-type county names ==
+geojson_sheriff %>%
+  filter(
+    agency_state == "HI"
+  ) %>%
+  distinct(
+    agency_county
+  ) %>%
+  print(n = 50)
+```
+
+```{r remaining-sheriff-types}
+#| warning: true
+
+# Check the other Sheriff-type county names for Tenneessee and Virgina.
+
+#== list of Sheriff-types ==
+geojson_sheriff %>%
+  filter(
+    agency_state %in%
+      c(
+        "TN",
+        "VA"
+      ),
+    agency_county %in%
+      c(
+        "HAWKINS",
+        "ALBEMARLE",
+        "JAMES CITY"
+      )
+  ) %>%
+  distinct(
+    agency_state,
+    agency_county
+  ) %>%
+  print(n = 100)
+```
+
+```{r county-lookup}
+#| warning: true
+
+# Create a lookup table to compare column content row-by-row, apply corrections, and join to homicide.
+
+#== view column content to correct ==
+county_lookup <- tibble::tribble(
+  ~county_agency     , ~county_corrected ,
+  "DE KALB"          , "DEKALB"          ,
+  "LA PORTE"         , "LAPORTE"         ,
+  "DONA ANA"         , "DOÑA ANA"        ,
+  "CARSON CITY CITY" , "CARSON CITY"
+)
+
+#== apply corrections and join ==
+homicide_subset <- homicide_subset %>%
+  left_join(
+    county_lookup,
+    by = "county_agency"
+  ) %>%
+  mutate(
+    county_agency = coalesce(
+      county_corrected,
+      county_agency
+    )
+  ) %>%
+  select(
+    -county_corrected
+  ) %>%
+  print(n = 25)
+```
+
+```{r rebuild-homicide-sheriff}
+#| warning: true
+
+# Update the homicide_sheriff subset with the updated dat from the homicide_subset data.
+
+#== rebuild the dataset ==
+homicide_sheriff <- homicide_subset %>%
+  filter(
+    Agentype == "Sheriff"
+  )
+
+#== count rows ==
+nrow(homicide_sheriff)
+```
+
+```{r sheriff-join-2}
+#| warning: true
+
+# Deduplicate and join the geojson_sheriff dataset on 1 row/county+state.
+
+#== deduplicate largest population ==
+geo_sheriff_dedup <- geojson_sheriff %>%
+  filter(
+    !is.na(
+      agency_population
+    )
+  ) %>%
+  group_by(
+    agency_county,
+    agency_state
+  ) %>%
+  slice_max(
+    agency_population,
+    n = 1,
+    with_ties = FALSE
+  ) %>%
+  ungroup()
+
+#== check deduplication process ==
+geo_sheriff_dedup %>%
+  count(
+    agency_county,
+    agency_state
+  ) %>%
+  filter(
+    n > 1
+  ) %>%
+  nrow()
+
+#== re-join subsets ==
+sheriff_joined <- homicide_sheriff %>%
+  left_join(
+    geo_sheriff_dedup,
+    by = c(
+      "county_agency" = "agency_county",
+      "county_state" = "agency_state"
+    )
+  )
+
+#== view row counts & NA rate ==
+nrow(homicide_sheriff)
+
+nrow(sheriff_joined)
+
+sum(
+  is.na(sheriff_joined$agency_population)
+) /
+  nrow(sheriff_joined)
+```
