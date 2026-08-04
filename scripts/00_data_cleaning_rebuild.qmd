@@ -1375,7 +1375,7 @@ geojson_sheriff %>%
 
 # Create a lookup table to compare column content row-by-row, apply corrections, and join to homicide.
 
-#== view column content to correct ==
+#== build original -> correct columns ==
 county_lookup <- tibble::tribble(
   ~county_agency     , ~county_corrected ,
   "DE KALB"          , "DEKALB"          ,
@@ -1470,4 +1470,809 @@ sum(
   is.na(sheriff_joined$agency_population)
 ) /
   nrow(sheriff_joined)
+```
+
+```{r state-le-subset}
+#| warning: true
+
+# Filter both datasets for the primary state LE-type agencies.
+
+#== homicide subset ==
+homicide_state_le <- homicide_subset %>%
+  filter(
+    Agentype == "Primary state LE"
+  ) %>%
+  rename(
+    city = Agency
+  ) %>%
+  mutate(
+    city_match = toupper(
+      trimws(city)
+    )
+  )
+
+#== geojson subset ==
+geojson_state_le <- geojson_derived %>%
+  filter(
+    agency_type == "PRIMARY STATE AGENCY"
+  ) %>%
+  mutate(
+    agency_city_match = toupper(
+      trimws(agency_city)
+    )
+  )
+
+#== view row counts ==
+nrow(homicide_state_le)
+nrow(geojson_state_le)
+```
+
+```{r le-state-join}
+#| warning: true
+
+# Join homicide_/geojson_state_le datasets on city + state.
+
+#== join on city + state ==
+state_le_joined <- homicide_state_le %>%
+  left_join(
+    geojson_state_le,
+    by = c(
+      "city_match" = "agency_city_match",
+      "state" = "agency_state"
+    )
+  )
+
+#== view row counts ==
+nrow(homicide_state_le)
+nrow(state_le_joined)
+
+#== view NA rate ==
+sum(
+  is.na(state_le_joined$agency_population)
+) /
+  nrow(state_le_joined)
+```
+
+```{r hom-geo-subsets}
+#| warning: true
+
+# Filter both datasets for the special police-type agencies.
+
+#== homicide subset ==
+homicide_special <- homicide_subset %>%
+  filter(
+    Agentype == "Special police"
+  ) %>%
+  rename(city = Agency) %>%
+  mutate(
+    city_match = toupper(
+      trimws(city)
+    )
+  )
+
+#== geojson subset ==
+geojson_special <- geojson_derived %>%
+  filter(
+    agency_type == "SPECIAL JURISDICTION"
+  ) %>%
+  mutate(
+    agency_city_match = toupper(
+      trimws(agency_city)
+    )
+  )
+
+#== view row counts ==
+nrow(homicide_special)
+nrow(geojson_special)
+```
+
+```{r special-subsets-join}
+#| warning: true
+
+# Join homicide_/geojson_special datasets on city + state.
+
+#== join on city + state ==
+special_joined <- homicide_special %>%
+  left_join(
+    geojson_special,
+    by = c(
+      "city_match" = "agency_city_match",
+      "state" = "agency_state"
+    )
+  )
+
+#== view row counts ==
+nrow(homicide_special)
+nrow(special_joined)
+
+#== view NA rate ==
+sum(
+  is.na(special_joined$agency_population)
+) /
+  nrow(special_joined)
+```
+
+```{r special-police-join}
+#| warning: true
+
+# Deduplicate and join the geojson_special dataset on 1 row/city+state.
+
+#== deduplicate largest population ==
+geo_special_dedup <- geojson_special %>%
+  filter(
+    !is.na(
+      agency_population
+    )
+  ) %>%
+  group_by(
+    agency_city_match,
+    agency_state
+  ) %>%
+  slice_max(
+    agency_population,
+    n = 1,
+    with_ties = FALSE
+  ) %>%
+  ungroup()
+
+#== check deduplication process ==
+geo_special_dedup %>%
+  count(
+    agency_city_match,
+    agency_state
+  ) %>%
+  filter(
+    n > 1
+  ) %>%
+  nrow()
+
+#== re-join subsets ==
+special_joined <- homicide_special %>%
+  left_join(
+    geo_special_dedup,
+    by = c(
+      "city_match" = "agency_city_match",
+      "state" = "agency_state"
+    )
+  )
+
+#== view row counts ==
+nrow(homicide_special)
+
+nrow(special_joined)
+
+#== view NA rate by row ==
+sum(
+  is.na(special_joined$agency_population)
+) /
+  nrow(special_joined)
+```
+
+```{r special-join-diagnostics}
+#| warning: true
+
+# Check the primary state LE join and state subsets for real matches.
+
+#== count agency match rows ==
+sum(
+  !is.na(
+    state_le_joined$agency_name
+  )
+)
+
+#== count homicide_state_le cities ==
+homicide_state_le %>%
+  distinct(
+    city_match
+  ) %>%
+  nrow()
+
+#== count geojson_state_le cities ==
+geojson_state_le %>%
+  distinct(
+    agency_city_match
+  ) %>%
+  nrow()
+
+#== count existing cities in homicide that are in geojson ==
+sum(
+  unique(
+    homicide_state_le$city_match
+  ) %in%
+    geojson_state_le$agency_city_match
+)
+```
+
+```{r special-join-diagnostics-2}
+#| warning: true
+
+# Compare the real city values to cities that overlap.
+
+#== homicide-side sample ==
+homicide_state_le %>%
+  distinct(
+    city
+  ) %>%
+  slice_sample(n = 15)
+
+#== geojson-side sample ==
+geojson_state_le %>%
+  distinct(
+    agency_city
+  ) %>%
+  slice_sample(n = 15)
+```
+
+```{r county-police-subset}
+#| warning: true
+
+# Filter the homicide dataset for the county police-type agencies.
+
+#== homicide subset ==
+homicide_county_police <- homicide_subset %>%
+  filter(
+    Agentype == "County police"
+  ) %>%
+  rename(
+    city = Agency
+  ) %>%
+  mutate(
+    city_match = toupper(
+      trimws(city)
+    )
+  )
+
+#== view row count ==
+nrow(homicide_county_police)
+```
+
+```{r county-police-sample}
+#| warning: true
+
+# Check the city values are also in Agency.
+
+#== homicide-side sample ==
+homicide_county_police %>%
+  distinct(
+    city
+  ) %>%
+  slice_sample(n = 15)
+
+#== geojson-side sample (reuse the deduped municipal subset) ==
+geojson_municipal_dedup %>%
+  distinct(
+    agency_city
+  ) %>%
+  slice_sample(n = 15)
+```
+
+```{r county-police-name-check}
+#| warning: true
+
+# Check county police department names match geojson agency_name instead of city.
+
+#== normalize department name ==
+homicide_county_police <- homicide_county_police %>%
+  mutate(
+    name_match = toupper(
+      trimws(city)
+    )
+  )
+
+#== normalize agency_name across ==
+geojson_name_check <- geojson_derived %>%
+  mutate(
+    agency_name_match = toupper(
+      trimws(agency_name)
+    )
+  )
+
+#== count existing department names ==
+sum(
+  unique(
+    homicide_county_police$name_match
+  ) %in%
+    geojson_name_check$agency_name_match
+)
+
+#== total distinct department names ==
+homicide_county_police %>%
+  distinct(
+    name_match
+  ) %>%
+  nrow()
+```
+
+```{r county-police-name-diagnostics}
+#| warning: true
+
+# Compare department names to geojson county-related agency names.
+
+#== names w/no exact match ==
+homicide_county_police %>%
+  distinct(
+    name_match
+  ) %>%
+  filter(
+    !name_match %in% geojson_name_check$agency_name_match
+  ) %>%
+  print(n = 30)
+
+#== county names filed as local police ==
+geojson_name_check %>%
+  filter(
+    agency_type == "LOCAL POLICE DEPARTMENT",
+    grepl(
+      "COUNTY",
+      agency_name_match
+    )
+  ) %>%
+  distinct(
+    agency_name_match
+  ) %>%
+  print(n = 30)
+```
+
+```{r county-police-name-normalize}
+#| warning: true
+
+# Strip trailing qualifiers after the first " - " from geojson agency names.
+
+#== strip first match w/regex ==
+geojson_name_check <- geojson_name_check %>%
+  mutate(
+    agency_name_base = agency_name_match %>%
+      sub(
+        " - .*$",
+        "",
+        .
+      ) %>%
+      sub(" HEADQUARTERS$", "", .)
+  )
+
+#== re-count stripped names ==
+sum(
+  unique(
+    homicide_county_police$name_match
+  ) %in%
+    geojson_name_check$agency_name_base
+)
+```
+
+```{r county-police-name-normalize-diagnostics}
+#| warning: true
+
+# List department names still unmatched after stripping geojson suffixes.
+
+#== names w/no match after stripping ==
+homicide_county_police %>%
+  distinct(
+    name_match
+  ) %>%
+  filter(
+    !name_match %in% geojson_name_check$agency_name_base
+  ) %>%
+  print(n = 20)
+```
+
+```{r county-police-name-remaining-check}
+#| warning: true
+
+# Search roots for name variants pulled from the 17 unmatched departments.
+
+#== create an unmatched name list ==
+unmatched_roots <- c(
+  "NORTH SLOPE",
+  "BRISTOL BAY",
+  "MIAMI-DADE",
+  "CHATHAM",
+  "GREENE",
+  "WARREN",
+  "BOONE",
+  "JEFFERSON",
+  "WOODFORD",
+  "MONTGOMERY",
+  "PRINCE GEORGE",
+  "GENESEE",
+  "ST. LOUIS",
+  "ESSEX",
+  "WESTCHESTER",
+  "GARFIELD",
+  "HENRICO"
+)
+
+#== find names containing the root names ==
+geojson_name_check %>%
+  filter(
+    grepl(
+      paste(
+        unmatched_roots,
+        collapse = "|"
+      ),
+      agency_name_base
+    )
+  ) %>%
+  distinct(
+    agency_name_base
+  ) %>%
+  print(n = 40)
+```
+
+```{r county-police-name-remaining-narrow}
+#| warning: true
+
+# Search root names against "LOCAL POLICE DEPARTMENT" only.
+
+#== search distinct root names ==
+geojson_name_check %>%
+  filter(
+    agency_type == "LOCAL POLICE DEPARTMENT",
+    grepl(
+      paste(
+        unmatched_roots,
+        collapse = "|"
+      ),
+      agency_name_base
+    )
+  ) %>%
+  distinct(
+    agency_name_base
+  ) %>%
+  print(n = 40)
+```
+
+```{r county-police-name-remaining-bystate}
+#| warning: true
+
+# Pair unmatched names with state.
+
+#== unmatched names+state ==
+unmatched_bystate <- homicide_county_police %>%
+  filter(
+    !name_match %in% geojson_name_check$agency_name_base
+  ) %>%
+  distinct(
+    name_match,
+    state
+  )
+
+#== view the pairing ==
+unmatched_bystate
+```
+
+```{r county-police-name-remaining-bystate-check}
+#| warning: true
+
+# Check roots against geojson against its relevant states.
+
+#== names by state ==
+geojson_name_check %>%
+  filter(
+    agency_type == "LOCAL POLICE DEPARTMENT",
+    agency_state %in% unmatched_bystate$state,
+    grepl(
+      paste(
+        unmatched_roots,
+        collapse = "|"
+      ),
+      agency_name_base
+    )
+  ) %>%
+  distinct(
+    agency_state,
+    agency_name_base
+  ) %>%
+  arrange(
+    agency_state
+  ) %>%
+  print(n = 59)
+```
+
+```{r county-police-remaining-candidates}
+#| warning: true
+
+# View population per candidate.
+
+#== candidate populations ==
+geojson_name_check %>%
+  filter(
+    agency_state %in%
+      c(
+        "AK",
+        "FL",
+        "GA",
+        "MD"
+      ),
+    grepl(
+      "NORTH SLOPE|MIAMI-DADE|CHATHAM|MONTGOMERY COUNTY|PRINCE GEORGE",
+      agency_name_base
+    )
+  ) %>%
+  distinct(
+    agency_state,
+    agency_name_base,
+    agency_population
+  ) %>%
+  arrange(
+    agency_state,
+    agency_name_base,
+    desc(
+      agency_population
+    )
+  ) %>%
+  print(n = 40)
+```
+
+```{r county-police-remaining-candidates-2}
+#| warning: true
+
+# View population for the remaining unverified candidates.
+
+#== candidate populations ==
+geojson_name_check %>%
+  filter(
+    agency_state %in%
+      c(
+        "AK",
+        "NY",
+        "VA"
+      ),
+    grepl(
+      "BRISTOL BAY|WESTCHESTER|HENRICO",
+      agency_name_base
+    )
+  ) %>%
+  distinct(
+    agency_state,
+    agency_name_base,
+    agency_population
+  ) %>%
+  arrange(
+    agency_state,
+    agency_name_base,
+    desc(
+      agency_population
+    )
+  ) %>%
+  print(n = 20)
+```
+
+```{r county-police-lookup}
+#| warning: true
+
+# Build lookup table to map to the homicide department names (unmatched_bystate -> agency_name_base).
+
+#== build original -> corrected columns ==
+county_police_lookup <- tibble::tribble(
+  ~name_match                                , ~name_corrected                                                                   ,
+  "NORTH SLOPE BOROUGH"                      , "NORTH SLOPE BOROUGH POLICE DEPARTMENT / NORTH SLOPE BOROUGH CORRECTIONAL CENTER" ,
+  "BRISTOL BAY BOROUGH"                      , "BRISTOL BAY BOROUGH POLICE DEPARTMENT / KING SALMON JAIL"                        ,
+  "MIAMI-DADE"                               , "MIAMI-DADE COUNTY POLICE DEPARTMENT"                                             ,
+  "CHATHAM COUNTY POLICE DEPARTMENT"         , "SAVANNAH-CHATHAM METROPOLITAN POLICE DEPARTMENT"                                 ,
+  "MONTGOMERY COUNTY POLICE DEPARTMENT"      , "MONTGOMERY COUNTY DEPARTMENT OF POLICE"                                          ,
+  "PRINCE GEORGE'S COUNTY POLICE DEPARTMENT" , "PRINCE GEORGES COUNTY POLICE"                                                    ,
+  "WESTCHESTER PUBLIC SAFETY"                , "WESTCHESTER COUNTY DEPARTMENT OF PUBLIC SAFETY"                                  ,
+  "HENRICO COUNTY POLICE D"                  , "HENRICO COUNTY DIVISION OF POLICE"
+)
+```
+
+```{r county-police-apply-lookup}
+#| warning: true
+
+# Apply lookup, then join deduplicated population by exact name match.
+
+#== apply lookup to homicide side ==
+homicide_county_police <- homicide_county_police %>%
+  left_join(
+    county_police_lookup,
+    by = "name_match"
+  ) %>%
+  mutate(
+    name_match = coalesce(
+      name_corrected,
+      name_match
+    )
+  ) %>%
+  select(
+    -name_corrected
+  )
+
+#== dedupe geojson by exact name, keep largest population ==
+geo_county_police_dedup <- geojson_name_check %>%
+  filter(
+    !is.na(
+      agency_population
+    )
+  ) %>%
+  group_by(
+    agency_name_base
+  ) %>%
+  slice_max(
+    agency_population,
+    n = 1,
+    with_ties = FALSE
+  ) %>%
+  ungroup()
+```
+
+```{r county-police-join}
+#| warning: true
+
+# Join deduplicated population onto homicide by name.
+
+#== join subsets ==
+homicide_county_police <- homicide_county_police %>%
+  left_join(
+    geo_county_police_dedup %>%
+      select(
+        agency_name_base,
+        agency_population
+      ),
+    by = c(
+      "name_match" = "agency_name_base"
+    )
+  )
+
+#== check row count held ==
+nrow(
+  homicide_county_police
+)
+
+#== check NA rate ==
+mean(
+  is.na(
+    homicide_county_police$agency_population
+  )
+)
+```
+
+```{r no-match-agentypes}
+#| warning: true
+
+# Create a subset of the no-match Agentypes, and retain their NA values.
+
+#== homicide subset ==
+homicide_no_match <- homicide_subset %>%
+  filter(
+    Agentype %in%
+      c(
+        "Tribal",
+        "Regional police",
+        "Primary federal LE"
+      )
+  ) %>%
+  rename(
+    city = Agency
+  ) %>%
+  mutate(
+    city_match = toupper(
+      trimws(city)
+    ),
+    agency_population = NA_real_
+  )
+
+#== check row count ==
+nrow(homicide_no_match)
+```
+
+```{r pipeline-location-rename}
+#| warning: true
+
+# Rename location column to one shared name.
+
+#== standardize name on the 5 city-based pieces ==
+municipal_joined <- municipal_joined %>%
+  rename(
+    location_match = city
+  )
+
+sheriff_joined <- sheriff_joined %>%
+  rename(
+    location_match = county_agency
+  )
+
+state_le_joined <- state_le_joined %>%
+  rename(
+    location_match = city
+  )
+
+special_joined <- special_joined %>%
+  rename(
+    location_match = city
+  )
+
+homicide_county_police <- homicide_county_police %>%
+  rename(
+    location_match = city
+  )
+
+homicide_no_match <- homicide_no_match %>%
+  rename(
+    location_match = city
+  )
+```
+
+```{r pipeline-reassembly}
+#| warning: true
+
+# Keep the common columns of the six subsets, then combine them.
+
+#== find columns ==
+common_cols <- intersect(
+  intersect(
+    intersect(
+      intersect(
+        intersect(
+          names(municipal_joined),
+          names(sheriff_joined)
+        ),
+        names(state_le_joined)
+      ),
+      names(special_joined)
+    ),
+    names(homicide_county_police)
+  ),
+  names(homicide_no_match)
+)
+
+#== combine using only the shared columns ==
+homicide_final <- bind_rows(
+  select(
+    municipal_joined,
+    all_of(common_cols)
+  ),
+  select(
+    sheriff_joined,
+    all_of(common_cols)
+  ),
+  select(
+    state_le_joined,
+    all_of(common_cols)
+  ),
+  select(
+    special_joined,
+    all_of(common_cols)
+  ),
+  select(
+    homicide_county_police,
+    all_of(common_cols)
+  ),
+  select(
+    homicide_no_match,
+    all_of(common_cols)
+  )
+)
+
+#== check row count ==
+nrow(homicide_final)
+```
+
+```{r pipeline-reassembly-check}
+#| warning: true
+
+# Confirm agency_population survived, and totals reconcile.
+
+#== show common columns ==
+common_cols
+
+#== confirm expected total ==
+nrow(municipal_joined) +
+  nrow(sheriff_joined) +
+  nrow(state_le_joined) +
+  nrow(special_joined) +
+  nrow(homicide_county_police) +
+  nrow(homicide_no_match)
+```
+
+```{r pipeline-location-check}
+#| warning: true
+
+# Check the NA rates in the homicide_final subset.
+
+#== location_match col ==
+mean(
+  is.na(
+    homicide_final$location_match
+  )
+)
 ```
