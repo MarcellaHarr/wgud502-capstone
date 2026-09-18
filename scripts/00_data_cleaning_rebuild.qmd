@@ -2276,3 +2276,136 @@ mean(
   )
 )
 ```
+
+```{r homicide-year-filter}
+#| warning: true
+
+# Filter the final homicide data to the four years (2017-202).
+
+#== filter year range ==
+homicide_final <- homicide_final %>%
+  filter(
+    record_year %in% 2017:2020
+  )
+
+#== display row count ==
+nrow(homicide_final)
+```
+
+
+```{r weather-extract-monthyear}
+#| warning: true
+
+# Get the full month name and numerical year from the daily_time variable.
+
+#== extract + format month/year ==
+weather_renamed <- weather_renamed %>%
+  mutate(
+    record_month = as.character(
+      lubridate::month(
+        daily_time,
+        label = TRUE,
+        abbr = FALSE
+      )
+    ),
+    record_year = lubridate::year(
+      daily_time
+    )
+  )
+
+#== display the results ==
+weather_renamed %>%
+  distinct(
+    record_month,
+    record_year
+  ) %>%
+  arrange(
+    record_year,
+    record_month
+  ) %>%
+  print(n = 20)
+```
+
+```{r weather-monthly-agg}
+#| warning: true
+
+# Aggregate daily weather into one row per state, month, and year.
+
+#== ... ==
+weather_monthly <- weather_renamed %>%
+  group_by(
+    state,
+    record_month,
+    record_year
+  ) %>%
+  summarise(
+    temp_2m_avg = mean(temp_2m_avg),
+    relative_humidity_2m_avg = mean(relative_humidity_2m_avg),
+    rain_sum = sum(rain_sum),
+    snowfall_sum = sum(snowfall_sum),
+    .groups = "drop"
+  )
+
+#== display row count ==
+nrow(weather_monthly)
+```
+
+```{r join-weather-to-final}
+#| warning: true
+
+# Join the final homicide data with the monthly weather data by state, month, and year.
+
+#== left join ==
+homicide_final <- homicide_final %>%
+  left_join(
+    weather_monthly,
+    by = c(
+      "state",
+      "record_month",
+      "record_year"
+    )
+  )
+
+#== display row count ==
+nrow(homicide_final)
+
+#== display NA rate ==
+mean(
+  is.na(
+    homicide_final$temp_2m_avg
+  )
+)
+```
+
+```{r diagnostic-NA-data}
+#| warning: true
+
+# Look into the 92% of NA weather data.
+
+#== check weather state values ==
+weather_renamed %>%
+  distinct(
+    state
+  ) %>%
+  arrange(
+    state
+  ) %>%
+  print(n = 60)
+
+#== check homicide state values ==
+homicide_final %>%
+  distinct() %>%
+  arrange() %>%
+  print(n = 60)
+
+#== check month name values ==
+setdiff(
+  homicide_final$record_month,
+  weather_monthly$record_month
+)
+
+setdiff(
+  weather_monthly$record_month,
+  homicide_final$record_month
+)
+```
