@@ -2408,4 +2408,149 @@ setdiff(
   weather_monthly$record_month,
   homicide_final$record_month
 )
+
+##########################
+# end of NA diagnostic   #
+##########################
 ```
+
+```{r final-homicide-to-parquet}
+#| warning: true
+
+# Save the finalized, year-filtered, weather-joined homicide dataset as a Parquet file.
+
+#== write to processed data folder ==
+arrow::write_parquet(
+  homicide_final,
+  here::here(
+    "data",
+    "processed",
+    "homicide_final.parquet"
+  )
+)
+```
+
+```{r load-homicide-parquet}
+#| warning: true
+
+# Reload the saved Parquet dataset.
+
+#== read data ==
+homicide_final_reloaded <- arrow::read_parquet(
+  here::here(
+    "data",
+    "processed",
+    "homicide_final.parquet"
+  )
+)
+
+#== display row count comparison ==
+(nrow(homicide_final_reloaded) == nrow(homicide_final))
+```
+
+```{r reverify-homicide-parquet}
+#| warning: true
+
+# Check the data types and null counts.
+
+#== select the columns ==
+homicide_final_reloaded %>%
+  select(
+    victim_racial_construct,
+    offender_racial_construct,
+    temp_2m_avg,
+    relative_humidity_2m_avg,
+    rain_sum,
+    snowfall_sum,
+    agency_population,
+    location_match
+  ) %>%
+  glimpse()
+
+#== display nulls/columns ==
+homicide_final_reloaded %>%
+  select(
+    victim_racial_construct,
+    offender_racial_construct,
+    temp_2m_avg,
+    relative_humidity_2m_avg,
+    rain_sum,
+    snowfall_sum,
+    agency_population,
+    location_match
+  ) %>%
+  summarise(
+    across(
+      everything(),
+      ~ sum(
+        is.na(.)
+      )
+    )
+  )
+```
+
+```{r category-balance-and-power}
+#| warning: true
+
+# Check the victim and offender race predictor categories.
+
+#== victim predictor balance ==
+homicide_final_reloaded %>%
+  count(victim_racial_construct)
+
+#== offender predictor balance ==
+homicide_final_reloaded %>%
+  count(offender_racial_construct)
+
+#== location match power ==
+homicide_final_reloaded %>%
+  summarise(
+    n_distinct(
+      location_match
+    )
+  )
+```
+
+```{r offender-unknown-crosstab}
+#| warning: true
+
+# Check offender race against solved cases.
+
+#== victim predictor balance ==
+homicide_final_reloaded %>%
+  count(
+    solved_status,
+    offender_racial_construct
+  ) %>%
+  group_by(
+    solved_status
+  ) %>%
+  mutate(
+    status_pct = n / sum(n) * 100
+  ) %>%
+  ungroup()
+```
+
+```{r build-model-data}
+#| warning: true
+
+# Derive surrounding/within jurisdiction predictor.
+
+#== build the dataset ==
+homicide_modeling_df <- homicide_final_reloaded %>%
+  mutate(
+    jurisdiction_match = case_when(
+      is.na(agency_population) ~ "Surrounding Area",
+      TRUE ~ "Within Jurisdiction"
+    )
+  )
+
+#== display row count ==
+nrow(homicide_modeling_df)
+
+#== display new column ==
+homicide_modeling_df %>%
+  count(jurisdiction_match)
+```
+
+
