@@ -4,11 +4,11 @@
 
 ## Overview
 
-This project started with a dataset that caught my attention: FBI Supplementary Homicide Report (SHR) records, paired with U.S. law enforcement agency data and historical weather data spanning over three years (2017 to 2020). The question I kept coming back to was simple. Do factors like where an incident happened, the weather conditions at the time, and the size of the local law enforcement agency have any relationship to the demographics of the victim? That curiosity turned into this capstone.
+This project originated from a previous course where I analyzed FBI Supplementary Homicide Report (SHR) data, combined with information from U.S. law enforcement agencies, city and state data, and historical weather records from 2017 to 2020. My goal was to explore whether factors such as incident location, weather at the time, and the size of local law enforcement agencies are related to the victim’s demographics. This curiosity ultimately led to this capstone project.
 
-At its core, this is a predictive analytics project. I'm using logistic regression to see whether weather, geography, and agency population can predict a specific demographic outcome among female homicide victims. Just as much of the work lives in the data itself though, since these are three real world sources that don't line up cleanly out of the box. A lot of this project has been figuring out how to merge them accurately, without quietly losing or duplicating records along the way.
+Essentially, this is a predictive analytics endeavor. I use logistic regression to determine if weather, geography, and agency size can forecast specific demographic patterns among female homicide victims. However, much of the complexity lies in the data itself, since these four sources are disparate and don't align perfectly out of the box. A significant part of the project has involved figuring out how to correctly merge these datasets without losing or duplicating records unnoticed.
 
-This is my Data Analytics Capstone for WGU's BSDA program, course D502. It's built around three graded deliverables:
+This is my Data Analytics Capstone program, course D502. It's built around three graded deliverables:
 
 1. Topic Approval Form (Task 1)
 2. Data Analytics Report (Task 2)
@@ -46,11 +46,14 @@ A few variables were intentionally left out as predictors, including offender ag
 
 ## Methodology
 
-Merging three independently sourced datasets meant they didn't share a common key out of the box. The homicide data records location as a city or county name, the agency data ties population and sworn officer counts to a specific department, and the weather data is aggregated by state and month. Getting these to line up took more deliberate joining logic than a single merge could handle.
+Merging four independent datasets was challenging due to the absence of a common key. The homicide data records locations by city or county, while the law enforcement data links population and officer counts to departments and aligns it with weather data, which is aggregated by state and month. Achieving alignment required complex join logic beyond simple merges.
 
-The first pass at merging used a single join key type (`city` and `state`) across all law enforcement agency types. That produced heavy row duplication (one city matching multiple sub-agencies, so each homicide record got copied once per matching agency) and around 45% missingness on agency-level fields. Digging into the raw data showed the real issue: not every agency type is organized around a city. Sheriff's offices are organized by county, state police don't map to a municipality at all, and county police departments are inconsistently labeled across sources.
+For my initial approach, I used a combined 'city' and 'state' key across all agencies, but this led to significant row duplication and about 45% missing agency data. Further analysis revealed the main issue was that agency structures differed: 
+- Sheriff's offices are county-based, 
+- state police are not municipality-specific, and 
+- county police departments have inconsistent labels.
 
-The fix was to split the homicide data by agency type (`Agentype`), join each subset against the matching slice of agency data using the appropriate key for that type, deduplicate to the highest-population record where multiple sub-agency records shared a key, and then reassemble everything with `bind_rows()`.
+The solution was to split the homicide data by agency type, join each subset with the relevant agency data using appropriate keys, deduplicate by retaining the highest-population record when multiple sub-agencies shared a key, and then recombine everything with `bind_rows()`.
 
 | Agency Type | Join Key | Rows | Row Duplication | NA Rate (agency_population) |
 |---|---|---|---|---|
@@ -62,9 +65,9 @@ The fix was to split the homicide data by agency type (`Agentype`), join each su
 | Tribal / Regional police / Primary federal LE | none available | 423 | N/A, no key exists | 100% (documented exclusion) |
 | **Total (reassembled)** | | **197,147** | | |
 
-A few specific fixes were needed along the way: an all-caps/whitespace normalization step applied to both sides of every join key, a lookup table correcting a state name typo in the raw homicide data ("Rhodes Island" instead of "Rhode Island"), a lookup table correcting county name formatting mismatches, and a name-correction lookup table for county police departments whose names didn't match cleanly between sources. The agency data also used `-999` as a placeholder for missing numeric values in several columns, which had to be recoded to a true missing value before any completeness analysis, so reported missingness reflects the data accurately.
+I also found that several specific fixes were necessary along the way. These included normalizing all-caps and whitespace around join keys, correcting a typo in the raw homicide data's state name from "Rhodes Island" to "Rhode Island," standardizing county name formatting, and updating county police department names to match across sources. Additionally, placeholder values of `-999` in some columns were recoded as missing data to ensure accurate reporting of missingness during analysis.
 
-Once every subset was joined and NA rates were understood, the pieces were combined into a single dataset using only the columns shared across all six subsets (found with `intersect()`), then reassembled with `bind_rows()`. The reassembled dataset holds 197,147 records, and every row has a location value after reassembly, with zero missing. That count comes before the analysis filters. After filtering to female victims for 2017 to 2020 and joining the weather data, the final analytical dataset holds 15,766 records.
+After joining all subsets and understanding NA rates, the data were combined into a single dataset using only shared columns identified with `intersect()`, then merged with `bind_rows()`. The final dataset contains 197,147 records of female victims with known race across all years, with no missing location data. Filtering to 2017–2020 and adding weather data resulted in a final analytical dataset of 15,766 records.
 
 ## Project Structure
 
