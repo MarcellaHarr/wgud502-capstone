@@ -2198,21 +2198,16 @@ homicide_no_match <- homicide_no_match %>%
 # Keep the common columns of the six subsets, then combine them.
 
 #== find columns ==
-common_cols <- intersect(
-  intersect(
-    intersect(
-      intersect(
-        intersect(
-          names(municipal_joined),
-          names(sheriff_joined)
-        ),
-        names(state_le_joined)
-      ),
-      names(special_joined)
-    ),
-    names(homicide_county_police)
-  ),
-  names(homicide_no_match)
+common_cols <- Reduce(
+  intersect,
+  list(
+    names(municipal_joined),
+    names(sheriff_joined),
+    names(state_le_joined),
+    names(special_joined),
+    names(homicide_county_police),
+    names(homicide_no_match)
+  )
 )
 
 #== combine using only the shared columns ==
@@ -2551,6 +2546,31 @@ nrow(homicide_modeling_df)
 #== display new column ==
 homicide_modeling_df %>%
   count(jurisdiction_match)
+```
+
+```{r package-list}
+# Produce the package list for C3.
+
+#== display package versions ==
+# sapply(
+#   c(
+#     "dplyr",
+#     "tidyr",
+#     "stringr",
+#     "stringi",
+#     "lubridate",
+#     "readr",
+#     "arrow",
+#     "here",
+#     "ggplot2",
+#     "rmarkdown"
+#   ),
+#   function(p) {
+#     as.character(
+#       packageVersion(p)
+#     )
+#   }
+# )
 ```
 
 
