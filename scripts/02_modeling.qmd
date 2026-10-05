@@ -1,0 +1,102 @@
+---
+title: "Model Data Build - Rough & Full Model, Splits & Metrics, and Coefficients"
+author: "Marcella Harris"
+date: "`r Sys.Date()`"
+format: html
+execute: 
+  echo: true
+---
+
+<br>
+
+<br>
+
+```{r load-packages}
+#| echo: true
+#| message: false
+#| warning: true
+
+# Load libraries.
+
+#== packages ==
+library(here)
+library(tidymodels)
+```
+
+```{r load-model-data}
+#| warning: true
+
+# Load the homicide modeling dataframe.
+
+#== read modeling Parquet ==
+homicide_modeling_df <- arrow::read_parquet(
+  here::here(
+    "data",
+    "processed",
+    "homicide_modeling.parquet"
+  )
+)
+
+#== display shape (row, column) ==
+dim(homicide_modeling_df)
+```
+
+<br>
+
+## Build a rough model
+
+Before building the full model, a quick weather-only model checks that everything 
+runs. Agency population and jurisdiction location are added later, after the missing population values are filled. The code follows examples from **DataSciencePlus.com** 
+*"Base R glm() vs tidymodels for Logistic Regression: What You Actually Gain"*, 
+the **TidyModels.org** article *"Preprocess your data with recipes,"* and **R-Statistics.co's** *"parsnip fit() in R: Train a Model Specification"* (Example 4).
+
+```{r prototype-weather-model}
+#| warning: true
+
+# Verify logistic regression runs with the four weather features.
+
+#== set the outcome order ==
+homicide_modeling_df <- homicide_modeling_df %>%
+  mutate(
+    victim_racial_construct = factor(
+      victim_racial_construct,
+      levels = c(
+        "Not Black",
+        "Black"
+      )
+    )
+  )
+
+#== display counts ==
+homicide_modeling_df %>%
+  count(victim_racial_construct)
+
+#== fit the model ==
+weather_fit_poc <- logistic_reg() %>%
+  set_engine(
+    "glm"
+  ) %>%
+  fit(
+    victim_racial_construct ~
+      temp_2m_avg + relative_humidity_2m_avg + rain_sum + snowfall_sum,
+    data = homicide_modeling_df
+  )
+
+#== coefficient table + p-values ==
+weather_fit_poc %>%
+  tidy()
+
+#== convergence check ==
+extract_fit_engine(
+  weather_fit_poc
+)$converged
+
+#== predicted class split ==
+weather_fit_poc %>%
+  predict(
+    new_data = homicide_modeling_df
+  ) %>%
+  count(.pred_class)
+```
+
+After running, the **model** showed that it **converged**. It predicted 4.5% of victims as Black, while 35.7% actually are, so it **predicts Black** far **less often** than it occurs. This is only a check, and the full model with agency population and jurisdiction location comes next.

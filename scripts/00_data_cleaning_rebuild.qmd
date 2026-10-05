@@ -1,9 +1,15 @@
 ---
 title: "Data Cleaning Rebuild — Raw to Final Master Dataset"
+author: "Marcella Harris"
+date: "`r Sys.Date()`"
 format: html
 execute:
   echo: true
 ---
+
+<br>
+
+<br>
 
 ```{r load-packages}
 #| echo: true
@@ -2546,6 +2552,70 @@ nrow(homicide_modeling_df)
 #== display new column ==
 homicide_modeling_df %>%
   count(jurisdiction_match)
+```
+
+```{r jurisdiction-na-check}
+#| warning: true
+
+# Check missing agency population overlapping with the jurisdiction groups.
+
+#== missing population ==
+homicide_modeling_df %>%
+  filter(
+    is.na(
+      agency_population
+    )
+  ) %>%
+  count(jurisdiction_match)
+
+#== non-missing population ==
+homicide_modeling_df %>%
+  filter(
+    !is.na(
+      agency_population
+    )
+  ) %>%
+  count(jurisdiction_match)
+
+#== display mix groups ==
+homicide_modeling_df %>%
+  count(
+    jurisdiction_match,
+    victim_racial_construct
+  ) %>%
+  group_by(
+    jurisdiction_match
+  ) %>%
+  mutate(
+    group_pct = n / sum(n) * 100
+  ) %>%
+  ungroup()
+```
+
+```{r modeling-data-to-parquet}
+#| warning: true
+
+# Save the modeling dataset as a Parquet file.
+
+#== write to data/processed folder ==
+arrow::write_parquet(
+  homicide_modeling_df,
+  here::here(
+    "data",
+    "processed",
+    "homicide_modeling.parquet"
+  )
+)
+
+#== display row/col counts ==
+arrow::read_parquet(
+  here::here(
+    "data",
+    "processed",
+    "homicide_modeling.parquet"
+  )
+) %>%
+  dim()
 ```
 
 ```{r package-list}
