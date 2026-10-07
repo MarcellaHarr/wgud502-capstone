@@ -2281,7 +2281,7 @@ mean(
 ```{r homicide-year-filter}
 #| warning: true
 
-# Filter the final homicide data to the four years (2017-202).
+# Filter the final homicide data to the four years (2017-2020).
 
 #== filter year range ==
 homicide_final <- homicide_final %>%
@@ -2493,13 +2493,13 @@ homicide_final_reloaded %>%
 ```{r category-balance-and-power}
 #| warning: true
 
-# Check the victim and offender race predictor categories.
+# Check the victim and offender race category counts.
 
-#== victim predictor balance ==
+#== victim outcome balance ==
 homicide_final_reloaded %>%
   count(victim_racial_construct)
 
-#== offender predictor balance ==
+#== offender race balance ==
 homicide_final_reloaded %>%
   count(offender_racial_construct)
 
@@ -2517,7 +2517,7 @@ homicide_final_reloaded %>%
 
 # Check offender race against solved cases.
 
-#== victim predictor balance ==
+#== offender race by solved status ==
 homicide_final_reloaded %>%
   count(
     solved_status,
