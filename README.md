@@ -28,7 +28,7 @@ The predictor variables being tested are:
 - `relative_humidity_2m_avg` (average relative humidity)
 - `rain_sum` (total rainfall)
 - `snowfall_sum` (total snowfall)
-- `agency_population` (population size of the reporting law enforcement agency)
+- `agency_population` (population size of the reporting law enforcement agency; missing values are filled with the median learned from the training set)
 - `jurisdiction_match` (Within Jurisdiction vs. Surrounding Area, derived from whether the homicide record matched a specific local agency during the pipeline join; a proxy for jurisdiction location, since incident-level coordinates aren't available to compare against agency boundaries directly)
 
 A few variables were intentionally left out as predictors, including offender age, offender gender, offender race, and weapon used, since none of these would be knowable before the outcome itself.
