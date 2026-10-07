@@ -100,3 +100,132 @@ weather_fit_poc %>%
 ```
 
 After running, the **model** showed that it **converged**. It predicted 4.5% of victims as Black, while 35.7% actually are, so it **predicts Black** far **less often** than it occurs. This is only a check, and the full model with agency population and jurisdiction location comes next.
+
+<br>
+
+## Split the data
+
+Before the full model is built, the records are split into a **training set** (11,824 of the records) for building the model and a **testing set** (the remaining 3,942) for checking how it does on records it hasn't seen. The split keeps the share of Black victims about the same in both sets.
+
+```{r split-data}
+#| warning: true
+
+# Split the modeling data into training and testing sets.
+
+#== set the seed ==
+set.seed(2026)
+
+#== reproducible split ==
+homicide_split <- homicide_modeling_df %>%
+  initial_split(
+    prop = 3 / 4,
+    strata = victim_racial_construct
+  )
+
+#== train/test split data ==
+homicide_train <- homicide_split %>%
+  training()
+
+homicide_test <- homicide_split %>%
+  testing()
+
+#== train/test row count ==
+c(
+  Training = nrow(
+    homicide_train
+  ),
+  Testing = nrow(
+    homicide_test
+  )
+)
+
+#== display outcome mix ==
+homicide_train %>%
+  count(
+    victim_racial_construct
+  ) %>%
+  mutate(
+    prop = n / sum(n)
+  )
+
+homicide_test %>%
+  count(
+    victim_racial_construct
+  ) %>%
+  mutate(
+    prop = n / sum(n)
+  )
+```
+
+As you can see, both sets have the same mix: **64.3% Not Black** and **35.7% Black**, matching the full dataset. The model will be built on the training set only, and the testing set stays untouched until the model is evaluated.
+
+<br>
+
+## Build the full model
+
+The recipe lists the outcome and the six predictors. It fills the missing agency population values with the median from the training set, and turns jurisdiction location into a 0/1 column the model can read.
+
+```{r build-recipe}
+#| warning: true
+
+# Specify the preprocessing steps, and set up the outcome and the six predictors.
+
+#== build the recipe ==
+homicide_recipe <- recipes::recipe(
+  victim_racial_construct ~
+    temp_2m_avg +
+    relative_humidity_2m_avg +
+    rain_sum +
+    snowfall_sum +
+    agency_population +
+    jurisdiction_match,
+  data = homicide_train
+) %>%
+  #== learn the median ==
+  recipes::step_impute_median(
+    agency_population
+  ) %>%
+  #== encode factors ==
+  recipes::step_dummy(
+    recipes::all_nominal_predictors()
+  )
+
+#== display recipe ==
+homicide_recipe
+```
+
+The recipe and the logistic regression are bundled into one workflow and fit on the training set, so the same steps will be applied when the model is checked on the testing set.
+
+```{r fit-full-model}
+#| warning: true
+
+# Fit the full logistic regression on the training set.
+
+#== bundle steps ==
+full_fit <- workflows::workflow() %>%
+  #== glue the recipe ==
+  workflows::add_recipe(
+    homicide_recipe
+  ) %>%
+  #== glue the model ==
+  workflows::add_model(
+    logistic_reg() %>%
+      set_engine(
+        "glm"
+      )
+  ) %>%
+  fit(
+    data = homicide_train
+  )
+
+#== coefficient table + p-values ==
+full_fit %>%
+  tidy()
+
+#== convergence check ==
+workflowsets::extract_fit_engine(full_fit)$converged
+```
+
+The full model converged (TRUE). Five predictors have positive estimates (temperature, humidity, rain, agency population, and Within Jurisdiction), so higher values go with a higher chance that the victim is Black, and records Within Jurisdiction have a higher chance than those in the Surrounding Area. Snowfall has a negative estimate. All seven p-values are below .05, but I'll know how well the model does on the testing set, which comes next.
+
+
