@@ -11,6 +11,22 @@ execute:
 
 <br>
 
+Before loading anything, I set R to print numbers in full decimal form instead of scientific notation so the p-values in the coefficient tables are easier to read.
+
+```{r set-options}
+#| warning: true
+
+# Print values in decimal form instead of scientific notation.
+
+#== disable attributes ==
+options(
+  pillar.sigfig = 5,
+  scipen = 999
+)
+```
+
+Now, I'll load the packages.
+
 ```{r load-packages}
 #| echo: true
 #| message: false
@@ -84,7 +100,13 @@ weather_fit_poc <- logistic_reg() %>%
 
 #== coefficient table + p-values ==
 weather_fit_poc %>%
-  tidy()
+  tidy() %>%
+  mutate_if(
+    is.numeric,
+    round,
+    5
+  ) %>%
+  as.data.frame()
 
 #== convergence check ==
 extract_fit_engine(
@@ -157,7 +179,7 @@ homicide_test %>%
   )
 ```
 
-As you can see, both sets have the same mix: **64.3% Not Black** and **35.7% Black**, matching the full dataset. The model will be built on the training set only, and the testing set stays untouched until the model is evaluated.
+As you can see, both sets have nearly the same mix: **0.64318 Not Black** and **0.35682 Black** in the training set, and **0.64307 Not Black** and **0.35693 Black** in the testing set, close to the full dataset. The model will be built on the training set only, and the testing set stays untouched until the model is evaluated.
 
 <br>
 
@@ -220,7 +242,13 @@ full_fit <- workflows::workflow() %>%
 
 #== coefficient table + p-values ==
 full_fit %>%
-  tidy()
+  tidy() %>%
+  mutate_if(
+    is.numeric,
+    round,
+    5
+  ) %>%
+  as.data.frame()
 
 #== convergence check ==
 workflowsets::extract_fit_engine(full_fit)$converged
@@ -228,4 +256,113 @@ workflowsets::extract_fit_engine(full_fit)$converged
 
 The full model converged (TRUE). Five predictors have positive estimates (temperature, humidity, rain, agency population, and Within Jurisdiction), so higher values go with a higher chance that the victim is Black, and records Within Jurisdiction have a higher chance than those in the Surrounding Area. Snowfall has a negative estimate. All seven p-values are below .05, but I'll know how well the model does on the testing set, which comes next.
 
+<br>
 
+## Evaluate the model
+
+Now the testing set is used for the first time. The fitted workflow applies the same recipe and model to the 3,942 testing records, so the model is checked on records it hasn't seen.
+
+```{r predict-test-set}
+#| warning: true
+
+# Predict the outcome for the testing set with the fitted workflow.
+
+#== bind predictions to test set ==
+test_results <- full_fit %>%
+  augment(
+    new_data = homicide_test
+  )
+
+#== display test set ==
+glimpse(
+  test_results
+)
+
+#== count predicted categories ==
+test_results %>%
+  count(
+    .pred_class
+  )
+```
+
+The testing set kept all 3,942 records and now has 38 columns because the `augment()` added three: the predicted class and the two predicted probabilities, one for each outcome level. The model predicted *"Not Black"* for *3,669* records and *"Black"* for *273*, while the testing set has *1,407* *"Black"* victims. So the model rarely gives *"Black"* a predicted probability above the classification cutoff (0.5), even though about a third of the testing victims are *"Black"*. How often these predictions are right is checked next.
+
+Now it's time to score the predictions against the benchmarks set before testing, an accuracy above the 64.3% always-"Not Black" baseline and a ROC AUC above 0.5, along with sensitivity, specificity, and the J-index to show how well each outcome level is identified.
+
+```{r evaluate-metrics}
+#| warning: true
+
+# Score the testing-set predictions with different performance metrics.
+
+#== bundle metrics ==
+homicide_metrics <- metric_set(
+  roc_auc,
+  accuracy,
+  yardstick::sensitivity,
+  yardstick::specificity,
+  j_index
+)
+
+#== calculate metrics ==
+test_results %>%
+  homicide_metrics(
+    truth = victim_racial_construct,
+    estimate = .pred_class,
+    .pred_Black,
+    event_level = "second"
+  )
+```
+
+The model's *accuracy* is *0.63978*, which is below the *0.64307* baseline, and its *ROC AUC* is *0.64748*, which is above *0.5*. *Sensitivity* is *0.092395*, *specificity* is *0.94359*, and the *J-index* is *0.035985*, so the model correctly labels most *"Not Black"* victims but identifies few *"Black"* victims. Because both benchmarks had to be met, the model does not meet the success criterion.
+
+<br>
+
+## Coefficients
+
+The coefficients in the full model are on the log-odds scale, so here they're converted to odds ratios with 95% confidence intervals, and each predictor's p-value is compared with alpha (.05) to test the null hypothesis.
+
+```{r odds-ratios}
+#| warning: true
+
+# Convert the full model's coefficients to odds ratios with 95% confidence intervals.
+
+#== odds ratios + 95% CIs ==
+full_fit %>%
+  tidy(
+    exponentiate = TRUE,
+    conf.int = TRUE
+  ) %>%
+  #== keep the reported columns ==
+  select(
+    term,
+    OR = estimate,
+    conf.low,
+    conf.high,
+    p.value
+  ) %>%
+  mutate_if(
+    is.numeric,
+    round,
+    5
+  ) %>%
+  as.data.frame()
+```
+
+The odds ratios (OR) point the same way as the estimates in the full model. Five predictors have an OR above 1: 
+
+- temperature (*1.00357*, 95% CI *1.00064* to *1.00650*), 
+- humidity (*1.02800*, 95% CI *1.02356* to *1.03250*), 
+- rain (*1.03704*, 95% CI *1.01810* to *1.05646*), 
+- agency population (*1.00003*, 95% CI *1.00002* to *1.00004*), and 
+- jurisdiction location, where records *"Within Jurisdiction"* have *1.23549* times the odds of those in the *"Surrounding Area"* (95% CI *1.11543* to *1.36953*). 
+
+Snowfall is the only one below 1 (*0.96867*, 95% CI *0.95692* to *0.98009*). Agency population's OR shows a very small but real change in the odds for each additional person served.
+
+For the predictor's p-value they all are below alpha (.05): 
+
+- temperature (p = *0.01662*), 
+- rain (p = *0.00012*), 
+- Within Jurisdiction (p = *0.00005*), and 
+- humidity, snowfall, and agency population (p < .00001, printed as *0.00000*).
+
+None of the 95% confidence intervals include 1, which agrees with the p-values, so I reject the null hypothesis for all six predictors. The intercept isn't a predictor, so it isn't part of this test. Even so, the model's accuracy on the testing set (*0.63978*) fell below the *0.64307* baseline, so the predictors are linked to whether the victim is Black, but not strongly enough to classify individual victims better than always guessing *"Not Black."*
