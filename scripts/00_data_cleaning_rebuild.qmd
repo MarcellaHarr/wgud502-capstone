@@ -10,7 +10,14 @@ format:
     toc-depth: 3
 bibliography: references.bib
 nocite: |
-  @*
+  @Buck2025, @Olumide2025, @PrabhakaranS2026b, @Matt2020,
+  @Hadley2024, @Spinu2011, @StatisticsDiscipline2021,
+  @Bobbitt2022, @Hemken2024, @JrHarrell2026, @Mahr2017,
+  @IISanderson2024, @Barter2020, @Batra2021, @Robinson2026,
+  @PrabhakaranS2026c, @Harris2024, @Bobbitt2023,
+  @PrabhakaranS2026d, @Gillespie2021, @Tang2023, @Mller2025,
+  @Wickham2026a, @Wickham2026b, @Wickham2026c, @Wickham2016,
+  @Spinu2011, @Allaire2026, @Csrdi2026
 csl: apa-numeric-superscript-brackets.csl
 execute: 
   echo: true
@@ -354,19 +361,19 @@ Then, the `mutate()` with `parse_date_time()` turns *VAL_DATE* into a real date-
 #== parse for weekday fullnmae and numeric value ==
 geojson_derived <- geojson_renamed %>%
   mutate(
-    # (Spinu, n.d.)
+    # (Spinu, 2011)
     val_date_parsed = parse_date_time(
       VAL_DATE,
       orders = "a, d b Y H:M:S",
       tz = "GMT"
     ),
-    # (Spinu, n.d.)
+    # (Spinu, 2011)
     validated_week_name = wday(
       val_date_parsed,
       label = TRUE,
       abbr = FALSE
     ),
-    # (Spinu, n.d.)
+    # (Spinu, 2011)
     validated_day = day(val_date_parsed)
   )
 
@@ -943,19 +950,19 @@ Since the **derived DF** was built from the **renamed DF** before this fix, it s
 #== re-derive validated_week_name and validated_day ==
 geojson_derived <- geojson_renamed %>%
   mutate(
-    # (Spinu, n.d.)
+    # (Spinu, 2011)
     val_date_parsed = parse_date_time(
       VAL_DATE,
       orders = "a, d b Y H:M:S",
       tz = "GMT"
     ),
-    # (Spinu, n.d.)
+    # (Spinu, 2011)
     validated_week_name = wday(
       val_date_parsed,
       label = TRUE,
       abbr = FALSE
     ),
-    # (Spinu, n.d.)
+    # (Spinu, 2011)
     validated_day = day(val_date_parsed)
   )
 
@@ -2559,7 +2566,7 @@ Then, the `Reduce()` with `intersect` compares the `names()` of all six groups t
 # Keep the common columns of the six subsets, then combine them.
 
 #== find columns ==
-# (Prabhakaran, 2026)
+# (Prabhakaran, 2026d)
 common_cols <- Reduce(
   intersect,
   list(
@@ -3143,7 +3150,7 @@ In conclusion, the saved file has *15,766* rows and *35* columns, one more than 
 
 ## Miscellaneous: List the package versions
 
-Last, this chunk is for listing the installed version of each of the ten packages named inside `c()`. I commented it out because it doesn't need to run every time the script runs, but once it's uncommented, the expected output is each package name with its version number printed below it.
+Lastly, this chunk lists the installed versions of the ten packages in `c()`. You can comment it out to prevent it from running every time the script runs, but I'll leave it executable, so that it prints each package's name and version.
 
 ```{r cleaning-package-list}
 # Produce the package list for C3 that are included in this file.
