@@ -1,41 +1,1208 @@
 ---
 title: "D502 Capstone - Data Exploration"
 author: "Marcella Harris"
-date: today
-format: html
+date: "`r Sys.Date()`"
+format: 
+  html:
+    highlight-style: arrow
+    theme: yeti
+    toc: true
+    toc-depth: 3
+bibliography: references.bib
+nocite: |
+  @*
+csl: apa-numeric-superscript-brackets.csl
+execute: 
+  echo: true
 ---
 
-```{r}
-# Load the parquet dataset and inspect its structure
+<br>
 
-#== load arrow package ==
+<br>
+
+## Load the data
+
+This script explores the analysis data that the cleaning script saved to see how complete the outcome and the six predictors are, how they're distributed, and how they relate to each other. But first, I'll load the packages and read in the Parquet file, *homicide_modeling.parquet*, which gets its name from being the same file the modeling script reads later, and the *.weather_raw* dataframe to check the units of the four weather measures, since the analysis data doesn't include them. I'll also load the helper functions and the plot theme from the utils.R file.
+
+```{r load-packages}
+#| echo: true
+#| output: false
+#| results: hide
+#| message: false
+#| warning: true
+
+# Load libraries.
+
+#== packages ==
+library(here)
 library(arrow)
-
-#== read parquet file into a dataframe ==
-df <- read_parquet(
-  "data/weather_homicide_nationalagency_df.parquet" #test data
-)
-
-#== preview structure and data types ==
-dplyr::glimpse(df)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(gt)
+library(sf)
+library(lwgeom)
+library(tigris)
+library(osmdata)
+library(ggplot2)
+library(sessioninfo)
 ```
 
-```{r}
-# Check how many rows are NA vs. non-NA for agency-level columns.
+```{r load-utils-file}
+#| warning: true
 
-#== NA values computation ==
-colSums(
-  is.na(
-    df[c(
-      "agency_name",
-      "agency_type",
-      "agency_latitude",
-      "agency_longitude",
-      "ft_sworn",
-      "agency_population",
-      "validated_week_name",
-      "validated_day"
-    )]
+# Source the total_rows function.
+# (Buck, 2025; Olumide, 2025)
+source(
+  here::here(
+    "scripts",
+    "utils.R"
   )
 )
 ```
+
+```{r load-eda-data}
+#| warning: true
+
+# Read the analysis data saved by the cleaning script and confirm its size.
+
+#== read modeling Parquet ==
+# (Olumide, 2025)
+homicide_eda <- read_parquet(
+  here::here(
+    "data",
+    "processed",
+    "homicide_modeling.parquet"
+  )
+)
+
+#== confirm rows and cols ==
+homicide_eda %>%
+  dim()
+```
+
+The analysis data has *15,766* records and *35* columns, the same size the cleaning script printed when it saved the file.
+
+```{r load-raw-weather}
+#| warning: true
+
+# Read the raw weather file and check the units of the weather measures.
+
+#== raw weather csv file ==
+# (Olumide, 2025)
+.weather_raw <- readr::read_csv(
+  here::here(
+    "data",
+    "raw",
+    "uncleaned_weather_2017-2020_v3.csv"
+  ),
+  show_col_types = FALSE
+)
+
+#== display weather col units ==
+.weather_raw %>%
+  select(
+    starts_with("daily_units")
+  ) %>%
+  distinct() %>%
+  # (Olumide, 2025)
+  pivot_longer(
+    cols = everything(),
+    names_to = "column",
+    values_to = "unit"
+  ) %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Daily Weather Units**"),
+    subtitle = md("*from raw weather data*")
+  )
+```
+
+The raw weather file reports temperature in *°F* (Fahrenheit), rainfall and snowfall in *inch* (inches), and relative humidity in *%* (percent), so each weather odds ratio in the modeling script is per one degree Fahrenheit, one inch, or one percentage point.
+
+<br>
+
+## Summarize completeness and scope
+
+Next, I'll summarize the five numeric predictors, count the missing values in the outcome and all six predictors, and count the records by year and the number of states to see how complete the data is and which years and places it covers.
+
+```{r summary-stats}
+#| warning: true
+
+# Summarize the predictors, count missing values, and count records by year and state
+
+#== summary statistics table ==
+homicide_eda %>%
+  select(
+    temp_2m_avg,
+    relative_humidity_2m_avg,
+    rain_sum,
+    snowfall_sum,
+    agency_population
+  ) %>%
+  # (Olumide, 2025)
+  pivot_longer(
+    cols = everything(),
+    names_to = "predictor",
+    values_to = "value"
+  ) %>%
+  group_by(
+    predictor
+  ) %>%
+  summarise(
+    Min = min(
+      value,
+      na.rm = TRUE
+    ),
+    `1st Qu.` = quantile(
+      value,
+      0.25,
+      na.rm = TRUE
+    ),
+    Median = median(
+      value,
+      na.rm = TRUE
+    ),
+    Mean = mean(
+      value,
+      na.rm = TRUE
+    ),
+    `3rd Qu.` = quantile(
+      value,
+      0.75,
+      na.rm = TRUE
+    ),
+    Max = max(
+      value,
+      na.rm = TRUE
+    ),
+    Missing = sum(
+      is.na(value)
+    )
+  ) %>%
+  mutate(
+    # (Matt, 2020; Hadley, 2024)
+    group = case_when(
+      predictor == "agency_population" ~ "Agency",
+      TRUE ~ "Weather"
+    ),
+    # (Matt, 2020; Hadley, 2024)
+    predictor = case_when(
+      predictor == "temp_2m_avg" ~ "Temperature (°F)",
+      predictor == "relative_humidity_2m_avg" ~ "Relative humidity (%)",
+      predictor == "rain_sum" ~ "Rainfall (inches)",
+      predictor == "snowfall_sum" ~ "Snowfall (inches)",
+      predictor == "agency_population" ~ "Agency population"
+    )
+  ) %>%
+  arrange(
+    desc(group)
+  ) %>%
+  # (Muldon, 2021)
+  gt(
+    rowname_col = "predictor",
+    groupname_col = "group"
+  ) %>%
+  fmt_number(
+    columns = Min:Max,
+    decimals = 2
+  ) %>%
+  fmt_integer(
+    columns = Min:Max,
+    rows = predictor == "Agency population"
+  ) %>%
+  fmt_integer(
+    columns = Missing
+  ) %>%
+  tab_header(
+    title = md("**Predictor Summary Statistics**"),
+    subtitle = md("*2017 through 2020*")
+  ) %>%
+  tab_stub_indent(
+    rows = everything(),
+    indent = 5
+  ) %>%
+  opt_align_table_header(
+    align = "left"
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  )
+
+#== missing vals per col ==
+homicide_eda %>%
+  select(
+    victim_racial_construct,
+    temp_2m_avg,
+    relative_humidity_2m_avg,
+    rain_sum,
+    snowfall_sum,
+    agency_population,
+    jurisdiction_match
+  ) %>%
+  summarise(
+    # (Barter, 2020)
+    across(
+      everything(),
+      ~ sum(is.na(.x))
+    )
+  ) %>%
+  # (Olumide, 2025)
+  pivot_longer(
+    cols = everything(),
+    names_to = "column",
+    values_to = "missing"
+  ) %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Missing Values per Predictor**")
+  )
+
+#== records per year ==
+homicide_eda %>%
+  count(record_year) %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Homicide Yearly Records**"),
+    subtitle = md("*2017 through 2020*")
+  )
+
+#== number distinct states ==
+homicide_eda %>%
+  summarise(
+    states = n_distinct(state)
+  ) %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Total Homicide States**"),
+    subtitle = md("*distinct counts*")
+  )
+```
+
+Only *agency_population* has missing values (*2,897*); the outcome and the other five predictors have *0*. Its mean (*2,305*) is much higher than its median (*392*), and its maximum is *49,926*, so a few agencies with very large values pull the mean up. Snowfall has a median of *0.000*, so at least half of the records come from months with no snowfall. The records cover *51* states over 2017 through 2020, with the most records in 2020 (*4,564*).
+
+<br>
+
+## Explore the outcome
+
+Next, I'll count the Black and Not Black victims, find each group's share, and plot the counts as a bar chart to see how balanced the two levels are, since the larger level's share is the accuracy the model has to beat.
+
+```{r outcome-bar}
+#| warning: false
+
+# Count each outcome level and find its share.
+
+#== outcome counts and shares ==
+homicide_outcome_table <- homicide_eda %>%
+  count(
+    victim_racial_construct
+  ) %>%
+  mutate(
+    share = round(
+      100 * n / sum(n),
+      1
+    )
+  )
+
+#== build table ==
+homicide_outcome_level <- homicide_outcome_table %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Victim Racial Level Outcome**"),
+    subtitle = md("*count and ratio*")
+  )
+
+#== display table ==
+homicide_outcome_level
+```
+
+```{r outcome-bar-plot}
+#| warning: false
+#| fig-width: 12
+#| fig-height: 8
+
+# Plot the outcome level counts.
+
+#== bar plot ==
+homicide_eda_plot <- homicide_outcome_table %>%
+  ggplot(
+    aes(
+      x = victim_racial_construct,
+      y = n,
+      fill = victim_racial_construct
+    )
+  ) +
+  geom_bar(
+    stat = "identity",
+    fill = c(
+      "#9D5E38",
+      "#FFB060"
+    )
+  ) +
+  geom_text(
+    aes(
+      # (Bobbitt, 2022)
+      label = paste0(
+        share,
+        "%"
+      )
+    ),
+    position = position_stack(vjust = 0.5),
+    color = "white",
+    size = 5,
+    fontface = "bold"
+  ) +
+  coord_flip() +
+  labs(
+    title = "Female homicide victims by race",
+    subtitle = "2017 through 2020",
+    caption = "Fig.1",
+    x = "Victim race",
+    y = "Number of victims"
+  ) +
+  theme_minimal() +
+  ggplot_theme
+
+#== display figure 1 ==
+homicide_eda_plot
+
+#== save figure ==
+ggsave(
+  # (Olumide, 2025)
+  filename = here::here(
+    "output",
+    "figures",
+    "fig_1.png"
+  ),
+  plot = homicide_eda_plot,
+  width = 12,
+  height = 8
+)
+```
+
+5,626 victims (*35.7*%) are Black and 10,140 (*64.3*%) are Not Black, so the two levels are unbalanced but not severely, since the smaller level still has thousands of records. A model that always guessed 'Not Black' would be right *64.3*% of the time, which is the accuracy the model has to beat.
+
+<br>
+
+## Compare the predictors by outcome
+
+Next, I'll compare the five numeric predictors for Black and Not Black victims, using each predictor's median and a box plot for each, to see whether any predictor's values differ between the two groups before the model tests them.
+
+```{r predictors-by-outcome}
+#| warning: true
+
+# Compare each numeric predictor's median and spread for Black and Not Black victims.
+
+#== reshape predictors to one column ==
+predictors_long <- homicide_eda %>%
+  #== select predictors ==
+  select(
+    victim_racial_construct,
+    temp_2m_avg,
+    relative_humidity_2m_avg,
+    rain_sum,
+    snowfall_sum,
+    agency_population
+  ) %>%
+  #== reshape to longview ==
+  # (Olumide, 2025)
+  pivot_longer(
+    # (Barter, 2020)
+    cols = where(
+      is.numeric
+    ),
+    names_to = "predictor",
+    values_to = "value"
+  )
+
+#== median table by outcome ==
+predictors_long %>%
+  group_by(
+    predictor,
+    victim_racial_construct
+  ) %>%
+  summarise(
+    median = median(
+      value,
+      na.rm = TRUE
+    ),
+    .groups = "drop"
+  ) %>%
+  # (Olumide, 2025)
+  pivot_wider(
+    names_from = victim_racial_construct,
+    values_from = median
+  ) %>%
+  mutate(
+    # (Matt, 2020; Hadley, 2024)
+    group = case_when(
+      predictor == "agency_population" ~ "Agency",
+      TRUE ~ "Weather"
+    ),
+    # (Matt, 2020; Hadley, 2024)
+    predictor = case_when(
+      predictor == "temp_2m_avg" ~ "Temperature (°F)",
+      predictor == "relative_humidity_2m_avg" ~ "Relative humidity (%)",
+      predictor == "rain_sum" ~ "Rainfall (inches)",
+      predictor == "snowfall_sum" ~ "Snowfall (inches)",
+      predictor == "agency_population" ~ "Agency population"
+    )
+  ) %>%
+  arrange(
+    desc(group)
+  ) %>%
+  # (Muldon, 2021)
+  gt(
+    rowname_col = "predictor",
+    groupname_col = "group"
+  ) %>%
+  fmt_number(
+    columns = c(
+      Black,
+      `Not Black`
+    ),
+    decimals = 2
+  ) %>%
+  fmt_integer(
+    columns = c(
+      Black,
+      `Not Black`
+    ),
+    rows = predictor == "Agency population"
+  ) %>%
+  cols_label(
+    Black = "Black (N = 5,626)",
+    `Not Black` = "Not Black (N = 10,140)"
+  ) %>%
+  tab_header(
+    title = md("**Predictor Medians**"),
+    subtitle = md("*Black* **v/s** *Not Black*")
+  ) %>%
+  tab_stub_indent(
+    rows = everything(),
+    indent = 5
+  ) %>%
+  opt_align_table_header(
+    align = "left"
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  tab_options(
+    table.width = pct(60)
+  )
+```
+
+```{r predictors-by-outcome-plot}
+#| warning: false
+#| fig-width: 12
+#| fig-height: 9
+
+# Plot the predictor's median and spread.
+
+#== boxplot ==
+predictors_long_plot <- predictors_long %>%
+  ggplot(
+    aes(
+      x = victim_racial_construct,
+      y = value
+    )
+  ) +
+  geom_boxplot(
+    fill = "#275561"
+  ) +
+  facet_wrap(
+    ~predictor,
+    scales = "free_y"
+  ) +
+  labs(
+    title = "Weather and agency population by victim race",
+    subtitle = "2017 through 2020",
+    caption = "Fig.2",
+    x = "Victim race",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  ggplot_theme
+
+#== display figure 2 ==
+predictors_long_plot
+
+#== save figure ==
+ggsave(
+  # (Olumide, 2025)
+  filename = here::here(
+    "output",
+    "figures",
+    "fig_2.png"
+  ),
+  plot = predictors_long_plot,
+  width = 12,
+  height = 9
+)
+```
+
+Black victims' records have higher medians than Not Black victims' records for agency population (*797* versus *241*), rainfall (*3.46* versus *2.45* inches), relative humidity (*71.6* versus *69.0*%), and temperature (*62.7* versus *60.1*°F), while snowfall's median is *0* for both. The largest gap is in agency population, where the Black median is more than three times the Not Black median. The agency population box plot excludes the *2,897* records with no recorded population, so it shows only the matched records.
+
+<br>
+
+## Compare jurisdiction by outcome
+
+Each record is labeled Within Jurisdiction if the homicide matches an agency with a recorded population, and Surrounding Area if it does not. Next, I'll calculate the share of Black and Not Black victims in each jurisdiction group.
+
+```{r jurisdiction-by-outcome}
+#| warning: true
+
+# Find and display the victim ratio within each jurisdiction group.
+
+#== counts and proportion ==
+jurisdiction_ratio <- homicide_eda %>%
+  group_by(
+    jurisdiction_match,
+    victim_racial_construct
+  ) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    ratio = round(
+      100 * n / sum(n),
+      1
+    )
+  ) %>%
+  as.data.frame()
+
+#== build table ==
+jurisdiction_ratio %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Victim Racial Proportions**"),
+    subtitle = md("*by jurisdiction group*")
+  )
+```
+
+Within Jurisdiction records are *36.7*% Black, compared with *31.2*% of Surrounding Area records, so the Black share is about 5.5 percentage points lower when a homicide didn't match an agency with a recorded population.
+
+To map the jurisdiction groups, I'll first count records in each county by jurisdiction group and victim race. Then I’ll separate each county's name from its state so I can match it to the county map shapes.
+
+```{r county-counts}
+#| warning: false
+
+# Count records by county, jurisdiction group, and victim race, and split each county from its state.
+
+#== count records ==
+county_counts <- homicide_eda %>%
+  # (Prabhakaran, 2026)
+  count(
+    CNTYFIPS,
+    jurisdiction_match,
+    victim_racial_construct
+  ) %>%
+  # (Prabhakaran, 2026c)
+  separate_wider_delim(
+    CNTYFIPS,
+    delim = ", ",
+    names = c(
+      "county_name",
+      "county_state"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  )
+
+#== display table ==
+# (Buck, 2025)
+pretty_summary(
+  main_title = "**County Record Counts**",
+  sub_title = "*rows v/s distinct v/s totals*",
+  "size" = nrow(county_counts),
+  "distinct" = county_counts %>%
+    distinct(CNTYFIPS) %>%
+    nrow(),
+  "total" = sum(county_counts$n)
+)
+```
+
+The counts produce *2,803* rows across *1,794* counties, and their total is *15,766*, matching the number of records in the analysis data.
+
+Next, I’ll download the state and county shapes from the U.S. Census Bureau for 2020, the last year of the data, since later files replace Connecticut’s counties with planning regions. I'll also call `total_rows()` from the utils.R file to count both the state and county shapes.
+
+```{r county-shapes}
+#| warning: false
+
+# Download the 2020 state and county shapes.
+
+#== save Census downloads for reuse ==
+# (Tierney, 2025)
+options(
+  tigris_use_cache = TRUE
+)
+
+#== state shapes ==
+# (Tierney, 2025)
+state_shapes <- tigris::states(
+  cb = TRUE,
+  resolution = "20m",
+  year = 2020
+)
+
+#== county shapes ==
+# (Tierney, 2025)
+county_shapes <- tigris::counties(
+  cb = TRUE,
+  resolution = "20m",
+  year = 2020
+)
+
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `U.S. Census State Shape ` = state_shapes,
+  ` U.S. Census County Shape` = county_shapes
+)
+
+#== preview results ==
+county_shapes %>%
+  select(
+    NAME,
+    STUSPS
+  ) %>%
+  head()
+```
+
+The Census files contain *52* state shapes and *3,221* county shapes, and each county shape already includes its state abbreviation.
+
+Before mapping, I'll create a key for each county shape using its name and state, matching the "County, ST” format used in the counts. I'll use *NAMELSAD* to identify the six cities that share a county's name, such as *Baltimore city*, so they aren't mistaken for counties. Then I'll check which counties in the counts have no matching shape and how many records they contain.
+
+```{r county-match}
+#| warning: false
+
+# Find the counties with no matching county shape and count them.
+
+#== check shape names ==
+county_shapes$NAME %>%
+  grep(
+    ", ",
+    .,
+    value = TRUE
+  )
+
+#== rebuild county names ==
+county_shapes <- county_shapes %>%
+  mutate(
+    # (Matt, 2020; Hadley, 2024)
+    shape_key = case_when(
+      NAMELSAD %in%
+        c(
+          "Baltimore city",
+          "St. Louis city",
+          "Richmond city",
+          "Roanoke city",
+          "Fairfax city",
+          "Franklin city"
+          # (Bobbitt, 2022)
+        ) ~ paste0(
+        NAMELSAD,
+        ", ",
+        STUSPS
+      ),
+      # (Bobbitt, 2022)
+      TRUE ~ paste0(
+        NAME,
+        ", ",
+        STUSPS
+      )
+    )
+  )
+
+#== non-matched counties ==
+# (Harrell, 2026)
+county_mismatch <- setdiff(
+  unique(
+    county_counts$CNTYFIPS
+  ),
+  county_shapes$shape_key
+)
+
+#== check duplicated keys ==
+county_shapes %>%
+  # (Prabhakaran, 2026)
+  count(
+    shape_key
+  ) %>%
+  filter(
+    n > 1
+  )
+
+#== amount of non-matched counties ==
+county_mismatch %>%
+  length()
+
+#==display names ==
+county_mismatch
+
+#== filter names + display records ==
+county_counts %>%
+  filter(
+    CNTYFIPS %in% county_mismatch
+  ) %>%
+  summarise(
+    records = sum(n)
+  ) %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**County Mismathced Name Records**")
+  )
+```
+
+After *NAMELSAD* assigned each of the six cities that share a county's name its own key, no key is used by more than one shape, and *0* counties and *0* records remain unmatched, so every record can be placed on the map.
+
+Next, I'll join the counts to their county shapes, move Alaska, Hawaii, and Puerto Rico below the lower 48 states, and find each county's center point, where its records will be drawn.
+
+```{r jurisdiction-map-data}
+#| warning: true
+
+# Join the counts to the county shapes, shift states, and find county's center point.
+
+#== join counts ==
+county_map_sf <- county_shapes %>%
+  # (Tierney, 2025)
+  left_join(
+    county_counts,
+    c(
+      "shape_key" = "CNTYFIPS"
+    )
+  ) %>%
+  filter(
+    !is.na(n)
+  ) %>%
+  # (Tierney, 2025)
+  tigris::shift_geometry()
+
+#== state outlines ==
+state_map_sf <- state_shapes %>%
+  # (Tierney, 2025)
+  tigris::shift_geometry()
+
+county_points <- county_map_sf %>%
+  mutate(
+    geometry = sf::st_centroid(
+      geometry
+    )
+  )
+
+#== display table ==
+# (Buck, 2025)
+pretty_summary(
+  main_title = "**County Centroid Shapes**",
+  sub_title = "*rows v/s totals*",
+  "size" = nrow(county_points),
+  "total" = sum(county_points$n)
+)
+```
+
+After the join, the map data has *2,803* county rows, the same number as the counts, since a county can have one row for each jurisdiction group and victim race, and their records add up to *15,766*, so none were lost when the shapes were joined, shifted, and turned into center points.
+
+Now I'll map the county center points in two panels, one for each jurisdiction group, with each point sized by its number of records and filled by victim race, over the shifted state outlines. 
+
+```{r jurisdiction-map-plot}
+#| warning: false
+#| fig-width: 12
+#| fig-height: 5
+
+# Map the county records for both jurisdiction groups in two panels.
+
+#== two-panel map==
+jurisdiction_map_plot <- ggplot() +
+  #== base map ==
+  geom_sf(
+    data = state_map_sf,
+    fill = "gray98",
+    color = "gray80",
+    size = 0.3
+  ) +
+  #== data on map ==
+  geom_sf(
+    data = county_points %>%
+      arrange(
+        desc(n)
+      ),
+    # (Tierney, 2025)
+    aes(
+      size = n,
+      fill = victim_racial_construct
+    ),
+    shape = 21,
+    color = "#275561",
+    stroke = 0.2,
+    alpha = 0.9
+  ) +
+  # (Tierney, 2025)
+  scale_size_area() +
+  scale_fill_manual(
+    values = c(
+      "Black" = "#9D5E38",
+      "Not Black" = "#FFB060"
+    ),
+    name = "Victim race"
+  ) +
+  # (Tierney, 2025)
+  facet_wrap(
+    ~jurisdiction_match
+  ) +
+  labs(
+    title = "Victim race within each jurisdiction group",
+    subtitle = "2017 through 2020 \n\n",
+    caption = "Fig.3",
+    size = "Records"
+  ) +
+  theme_void() +
+  theme() +
+  ggplot_theme
+
+#== display figure 3 ==
+jurisdiction_map_plot
+
+#== save figure ==
+ggsave(
+  # (Olumide, 2025)
+  filename = here::here(
+    "output",
+    "figures",
+    "fig_3.png"
+  ),
+  plot = jurisdiction_map_plot,
+  width = 12,
+  height = 5
+)
+```
+
+The Surrounding Area panel holds *2,897* records and the Within Jurisdiction panel holds *12,869*, so the second map is far denser. In both panels, most circles sit eastward, with a second cluster in California and Arizona, and the largest Black circles appear in the South and in large Midwestern cities.
+
+<br>
+
+## Check correlation between predictors
+
+Next, I'll compute Pearson's correlation between each pair of the five numeric predictors to see whether any two predictors move together so closely that the model couldn't separate their effects.
+
+```{r predictor-correlations}
+#| warning: true
+
+# Compute Pearson's correlation between each pair of numeric predictors.
+
+#== correlation matrix ==
+correlation_matrix <- homicide_eda %>%
+  #== select predictors ==
+  select(
+    temp_2m_avg,
+    relative_humidity_2m_avg,
+    rain_sum,
+    snowfall_sum,
+    agency_population
+  ) %>%
+  #== Pearson correlations matrix ==
+  cor(
+    use = "pairwise.complete.obs"
+  )
+
+#== rounded correlation matrix ==
+corr_matrix <- correlation_matrix %>%
+  round(2)
+
+#== display matrix ==
+corr_matrix %>%
+  as.data.frame() %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Predictor Correlation Matrix**"),
+    subtitle = md("*multicollinearity*")
+  )
+
+#== reshape predictor pair ==
+correlation_long <- correlation_matrix %>%
+  #== change to table ==
+  as.table() %>%
+  #== change to dataframe ==
+  as.data.frame()
+
+#== rename columns ==
+names(correlation_long) <-
+  c(
+    "Var1",
+    "Var2",
+    "Correlation"
+  )
+```
+
+```{r nonrundant-corr-plot}
+#| warning: true
+
+# Create a new table that will be used to plot only half of the correlation heat map.
+
+# filter half heat map values ==
+# (Rapp, 2024)
+filtered_correlation_long <- correlation_long %>%
+  mutate(
+    Level_1 = as.numeric(
+      Var1
+    ),
+    Level_2 = as.numeric(
+      Var2 %>% factor()
+    ),
+    Corr_level = if_else(
+      Level_1 >= Level_2,
+      Correlation,
+      NA
+    )
+  )
+
+#== display matrix ==
+filtered_correlation_long %>%
+  as.data.frame() %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Variable Correlation Matrix**"),
+    subtitle = md("*factored levels*")
+  )
+```
+
+```{r predictor-correlations-plot}
+#| warning: false
+#| fig-width: 12
+#| fig-height: 7
+
+# Plot the Pearson's correlation as a heatmap.
+
+#== correlation heatmap ==
+correlation_long_plot <- filtered_correlation_long %>%
+  ggplot(
+    aes(
+      x = Level_1,
+      y = Level_2,
+      fill = Corr_level
+    )
+  ) +
+  geom_tile(
+    color = "white"
+  ) +
+  geom_text(
+    aes(
+      label = round(
+        Corr_level,
+        2
+      )
+    )
+  ) +
+  scale_fill_gradient2(
+    low = "#9D5E38",
+    mid = "snow",
+    high = "#275561",
+    midpoint = 0,
+    limits = c(-1, 1),
+    name = "r",
+    na.value = "snow"
+  ) +
+  labs(
+    title = "Correlation between the numeric predictors",
+    subtitle = "2017 through 2020",
+    caption = "Fig.4",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  ) +
+  theme_minimal() +
+  ggplot_theme
+
+#== display figure 4 ==
+correlation_long_plot
+
+#== save figure ==
+ggsave(
+  # (Olumide, 2025)
+  filename = here::here(
+    "output",
+    "figures",
+    "fig_4.png"
+  ),
+  plot = correlation_long_plot,
+  width = 12,
+  height = 7
+)
+```
+
+The strongest correlations are between temperature and snowfall (*-0.59*) and between relative humidity and rainfall (*0.57*). Every other pair falls between *-0.20* and *0.19*, and agency population is nearly unrelated to the weather (*-0.07* to *0.08*). No pair comes close to 1 or -1, so the predictors don't move together closely enough to keep the model from separating their effects.
+
+<br>
+
+## Compare the Black proportion by state
+
+Next, I'll calculate the proportions of Black victims and the number of records in each state, and plot the proportions as a sorted horizontal bar chart to see how much the proportions vary by location across the 50 states and the District of Columbia.
+
+```{r black-share-by-state}
+#| warning: true
+
+# Find the Black proportion and number of records in each state.
+
+#== counts and proportion ==
+state_ratio <- homicide_eda %>%
+  group_by(
+    state
+  ) %>%
+  summarise(
+    records = n(),
+    black = sum(
+      victim_racial_construct == "Black"
+    )
+  ) %>%
+  mutate(
+    proportion = round(
+      100 * black / records,
+      1
+    )
+  ) %>%
+  as.data.frame()
+
+#== build table ==
+state_ratio %>%
+  # (Muldon, 2021)
+  gt() %>%
+  tab_header(
+    title = md("**Black Female Proportions**"),
+    subtitle = md("*by state*")
+  ) %>%
+  # (Muldon, 2021)
+  grand_summary_rows(
+    columns = c(
+      records,
+      black
+    ),
+    # (Olumide, 2025)
+    fns = list(
+      Counts = "sum"
+    )
+  ) %>%
+  tab_options(
+    table.width = pct(70)
+  )
+```
+
+```{r black-share-by-state-plot}
+#| warning: false
+#| fig-width: 12
+#| fig-height: 9
+
+# Plot the Black proportions in each state.
+
+#== horizontal bar chart ==
+state_ratio_plot <- state_ratio %>%
+  ggplot(
+    aes(
+      x = reorder(
+        state,
+        proportion
+      ),
+      y = proportion
+    )
+  ) +
+  geom_col(
+    fill = "#275561",
+    color = "#9D5E38"
+  ) +
+  coord_flip() +
+  labs(
+    title = "Black proportion of female homicide victims by state",
+    subtitle = "2017 through 2020",
+    caption = "Fig.5",
+    x = "State",
+    y = "Black victims (%)"
+  ) +
+  theme_minimal() +
+  ggplot_theme
+
+#== display figure 5 ==
+state_ratio_plot
+
+#== save figure ==
+ggsave(
+  # (Olumide, 2025)
+  filename = here::here(
+    "output",
+    "figures",
+    "fig_5.png"
+  ),
+  plot = state_ratio_plot,
+  width = 12,
+  height = 9
+)
+```
+
+The Black proportion of female victims ranges from *82.8*% in the District of Columbia to *0*% in *4* states (Idaho, Maine, Utah, and Wyoming), which recorded no Black female victims. The highest proportions are mostly in Southern states, such as Mississippi, Louisiana, and Georgia, and the lowest are mostly in Western and Northern New England states.
+
+<br>
+
+## Conclusion
+
+The analysis data is complete except for *2,897* missing agency population values. Since *35.7*% of its victims are Black, the model must outperform the *64.3*% accuracy achieved by always predicting "Not Black." However, Black and Not Black victims differ most in agency population. The proportion of Black victims also varies by jurisdiction group (*36.7*% versus *31.2*%) and by state (*0*% to *82.8*%). No pair of predictors is correlated strongly enough to prevent the model from separating their effects, so the data is ready for logistic regression in the modeling script.
+
+<br>
+
+## Miscellaneous: List the package versions
+
+List the installed versions of each package and print them out.
+
+```{r analysis-package-list}
+# Produce the package list for C3 that are included in this file.
+
+#== display package versions ==
+# (Tang, 2023)
+sapply(
+  c(
+    "here",
+    "arrow",
+    "dplyr",
+    "stringr",
+    "tidyr",
+    "gt",
+    "sf",
+    "lwgeom",
+    "tigris",
+    "osmdata",
+    "ggplot2",
+    "sessioninfo"
+  ),
+  function(p) {
+    as.character(
+      packageVersion(p)
+    )
+  }
+)
+```
+
+<br>
+
+## Session
+
+```{r exploration-session}
+# View comprehensive script summary and metadata.
+
+#== enhanced method ==
+sessioninfo::session_info()
+``` 
+
+<br>
