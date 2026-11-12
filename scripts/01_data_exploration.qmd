@@ -10,7 +10,12 @@ format:
     toc-depth: 3
 bibliography: references.bib
 nocite: |
-  @*
+  @Buck2025, @Olumide2025, @Muldoon2021, @Matt2020, @Hadley2024,
+  @Barter2020, @Bobbitt2022, @PrabhakaranS2026c, @Tierney2025,
+  @JrHarrell2026, @Rapp2024, @Tang2023, @Mller2025, @Richardson2026,
+  @Wickham2026b, @Wickham2025, @Wickham2026c, @Iannone2026,
+  @Pebesma2023, @Pebesma2026, @Walker2026, @Maspons2017,
+  @Wickham2016, @Csrdi2026
 csl: apa-numeric-superscript-brackets.csl
 execute: 
   echo: true
@@ -111,7 +116,7 @@ The analysis data has *15,766* records and *35* columns, the same size the clean
     names_to = "column",
     values_to = "unit"
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Daily Weather Units**"),
@@ -199,7 +204,7 @@ homicide_eda %>%
   arrange(
     desc(group)
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt(
     rowname_col = "predictor",
     groupname_col = "group"
@@ -255,7 +260,7 @@ homicide_eda %>%
     names_to = "column",
     values_to = "missing"
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Missing Values per Predictor**")
@@ -264,7 +269,7 @@ homicide_eda %>%
 #== records per year ==
 homicide_eda %>%
   count(record_year) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Homicide Yearly Records**"),
@@ -276,7 +281,7 @@ homicide_eda %>%
   summarise(
     states = n_distinct(state)
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Total Homicide States**"),
@@ -311,7 +316,7 @@ homicide_outcome_table <- homicide_eda %>%
 
 #== build table ==
 homicide_outcome_level <- homicide_outcome_table %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Victim Racial Level Outcome**"),
@@ -457,7 +462,7 @@ predictors_long %>%
   arrange(
     desc(group)
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt(
     rowname_col = "predictor",
     groupname_col = "group"
@@ -581,7 +586,7 @@ jurisdiction_ratio <- homicide_eda %>%
 
 #== build table ==
 jurisdiction_ratio %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Victim Racial Proportions**"),
@@ -600,7 +605,6 @@ To map the jurisdiction groups, I'll first count records in each county by juris
 
 #== count records ==
 county_counts <- homicide_eda %>%
-  # (Prabhakaran, 2026)
   count(
     CNTYFIPS,
     jurisdiction_match,
@@ -734,7 +738,6 @@ county_mismatch <- setdiff(
 
 #== check duplicated keys ==
 county_shapes %>%
-  # (Prabhakaran, 2026)
   count(
     shape_key
   ) %>%
@@ -757,7 +760,7 @@ county_counts %>%
   summarise(
     records = sum(n)
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**County Mismathced Name Records**")
@@ -921,7 +924,7 @@ corr_matrix <- correlation_matrix %>%
 #== display matrix ==
 corr_matrix %>%
   as.data.frame() %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Predictor Correlation Matrix**"),
@@ -969,7 +972,7 @@ filtered_correlation_long <- correlation_long %>%
 #== display matrix ==
 filtered_correlation_long %>%
   as.data.frame() %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Variable Correlation Matrix**"),
@@ -1080,13 +1083,13 @@ state_ratio <- homicide_eda %>%
 
 #== build table ==
 state_ratio %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Black Female Proportions**"),
     subtitle = md("*by state*")
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   grand_summary_rows(
     columns = c(
       records,
