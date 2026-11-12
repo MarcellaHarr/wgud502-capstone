@@ -2,8 +2,17 @@
 title: "Data Cleaning Rebuild — Raw to Final Master Dataset"
 author: "Marcella Harris"
 date: "`r Sys.Date()`"
-format: html
-execute:
+format: 
+  html:
+    highlight-style: arrow
+    theme: yeti
+    toc: true
+    toc-depth: 3
+bibliography: references.bib
+nocite: |
+  @*
+csl: apa-numeric-superscript-brackets.csl
+execute: 
   echo: true
 ---
 
@@ -13,10 +22,12 @@ execute:
 
 ## Load the raw data
 
-This script cleans and matches the raw homicide, law enforcement agency, and weather datasets, then saves the final dataset as two Parquet file. Each step stays in the order it was done, including checks that led to later fixes. But first, I'll use `library()` to load in the required packages.
+This script cleans and matches the raw homicide, law enforcement agency, and weather datasets, then saves the final dataset as two Parquet file. Each step stays in the order it was done, including checks that led to later fixes. But first, I'll load in the required packages.
 
 ```{r load-packages}
 #| echo: true
+#| output: false
+#| results: hide
 #| message: false
 #| warning: true
 
@@ -27,80 +38,25 @@ library(here)
 library(readr)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 library(lubridate)
 library(rmarkdown)
+library(sessioninfo)
 ```
 
-The function, `load_raw_data()`, uses `here::here()` to build each file's path from the project folder, `read_csv()` to read it, and `stopifnot()` to stop the run if the row count doesn't match the expected number: 894,636 homicide records, 23,486 agency records, and 89,121 weather records.
+The function, `load_raw_data()`, uses `here::here()` to build each file's path from the project folder, `read_csv()` to read it, and `stopifnot()` to stop the run if the row count doesn't match the expected number: 894,636 homicide records, 23,486 agency records, and 89,121 weather records. And it lives in the utils.R file, along with all the other functions, and will be called in with the `source()`.
 
-```{r load-data-fx}
+```{r load-source}
 #| warning: true
 
-# Create a function to load raw files, and confirm row counts.
-
-#== function computation ==
-load_raw_data <- function(
-  homicide_path = here::here(
-    "data",
-    "raw",
-    "uncleaned_map_homicides_df.csv"
-  ),
-  geojson_path = here::here(
-    "data",
-    "raw",
-    "uncleaned_geojson_df.csv"
-  ),
-  weather_path = here::here(
-    "data",
-    "raw",
-    "uncleaned_weather_2017-2020_v3.csv"
-  ),
-  homicide_rows = 894636,
-  geojson_rows = 23486,
-  weather_rows = 89121
-) {
-  #== homicide file ==
-  homicide_raw <- read_csv(homicide_path)
-  # verify record amount and stop loading if incorrect
-  stopifnot(
-    nrow(
-      homicide_raw
-    ) ==
-      homicide_rows
+# Source the load_raw_data function.
+# (Buck, 2025; Olumide, 2025)
+source(
+  here::here(
+    "scripts",
+    "utils.R"
   )
-
-  #== geojson/agency file ==
-  geojson_raw <- read_csv(geojson_path)
-  # verify record amount and stop loading if incorrect
-  stopifnot(
-    nrow(
-      geojson_raw
-    ) ==
-      geojson_rows
-  )
-
-  #== weather file ==
-  weather_raw <- read_csv(weather_path)
-  # verify record amount and stop loading if incorrect
-  stopifnot(
-    nrow(
-      weather_raw
-    ) ==
-      weather_rows
-  )
-
-  #== view all record amount ==
-  cat("All raw row counts confirmed.\n")
-
-  #== return all three datasets together in a list ==
-  return(
-    list(
-      homicide = homicide_raw,
-      geojson = geojson_raw,
-      weather = weather_raw
-    )
-  )
-}
+)
 ```
 
 My custom `load_raw_data()` function is run, and `$` pulls each of the three datasets out of the list it returns, so each one can be worked with on its own.
@@ -111,6 +67,7 @@ My custom `load_raw_data()` function is run, and `$` pulls each of the three dat
 # Load the data into a list.
 
 #== assign the load function ==
+# (Buck, 2025)
 raw_data <- load_raw_data()
 
 #== access individual dataframes ==
@@ -121,38 +78,7 @@ weather_df <- raw_data$weather
 
 Then, after loading the data into the list, *"All raw row counts confirmed"* message outputs, which confirms that the row count check passed for all three files.
 
-This second custom function, `column_list()`, uses the `names()` to list each dataset's column names so the raw columns can be compared before any are renamed.
-
-```{r col-name-fx}
-#| warning: true
-
-# Create a function to list the dataset columns.
-
-#== column display function ==
-column_list <- function(
-  data1 = homicide_df,
-  data2 = geojson_df,
-  data3 = weather_df
-) {
-  #== extract homicide dataset ==
-  dataset_1 <- data1 %>% names()
-
-  #== extract geojson dataset ==
-  dataset_2 <- data2 %>% names()
-
-  #== extract weather dataset ==
-  dataset_3 <- data3 %>% names()
-
-  #== return all dataset columns ==
-  return(
-    list(
-      homicide_list = dataset_1,
-      geojson_list = dataset_2,
-      weather_list = dataset_3
-    )
-  )
-}
-```
+This second custom function, `column_list()`, uses the `names()` to list each dataset's column names so the raw columns can be compared before any are renamed. The `source()` will dynamically call in this custom function, too.
 
 ```{r call-col-list-fx}
 #| warning: true
@@ -160,6 +86,7 @@ column_list <- function(
 # Inspect the column names of each raw dataset.
 
 #== call the column list function ==
+# (Buck, 2025)
 display_columns <- column_list(
   data1 = homicide_df,
   data2 = geojson_df,
@@ -174,36 +101,7 @@ Each dataframe (DF) writes its column names its own way. The **homicide DF** use
 
 ## Rename the columns and check the victim categories
 
-Before renaming anything, I'll set up my third custom function, `check_column_counts()`, which uses `ncol()` to count each DF's columns. It's written here but run after the renaming, so its defaults already point to the renamed DFs.
-
-```{r col-count-fx}
-#| warning: true
-
-# Count the total number of columns to confirm datasets' width and structure.
-
-#== column count computation ==
-check_column_counts <- function(
-  data1 = homicide_renamed,
-  data2 = geojson_renamed,
-  data3 = weather_renamed
-) {
-  #== view first dataset column count ==
-  cols_1 <- ncol(data1)
-
-  #== view second dataset column count ==
-  cols_2 <- ncol(data2)
-
-  #== view third dataset column count ==
-  cols_3 <- ncol(data3)
-
-  #== return all column counts ==
-  return(list(
-    homicide_cols = cols_1,
-    geojson_cols = cols_2,
-    weather_cols = cols_3
-  ))
-}
-```
+Before renaming anything, I'll set up my third custom function, `check_column_counts()`, which uses `ncol()` to count each DF's columns. It's written in the **utils.R** file but will run after the renaming, so its defaults already point to the renamed DFs.
 
 Then, `rename()` gives the columns I work with new lowercase names joined by underscores, such as *victim_age* and *agency_population*: 10 in the **homicide DF**, 8 in the **agency DF**, and 6 in the **weather DF**. In the **weather DF**, `select()` with `-c()` also drops the columns I don't need, e.g., the API metadata like *timezone* and *elevation*, along with every column that starts with *daily_units*.
 
@@ -250,6 +148,7 @@ weather_renamed <- weather_df %>%
     daily_time = daily.time,
     state = state_territory
   ) %>%
+  # (Prabhakaran, 2026b)
   select(
     -c(
       generationtime_ms,
@@ -263,7 +162,7 @@ weather_renamed <- weather_df %>%
   )
 ```
 
-My `check_column_counts()` function is run on the three renamed DFs to confirm each one's width.
+My `check_column_counts()` function is run on the three renamed dataframes to confirm each one's width.
 
 ```{r call-col-count-fx}
 #| warning: true
@@ -271,6 +170,7 @@ My `check_column_counts()` function is run on the three renamed DFs to confirm e
 # Check the renamed datasets.
 
 #== call column count function ==
+# (Buck, 2025)
 check_column_counts(
   homicide_renamed,
   geojson_renamed,
@@ -288,6 +188,7 @@ Next, I'll call `column_list()` again, this time on the renamed DFs, to confirm 
 # Check the new column names to confirm the renaming operation worked.
 
 #== call the column list function ==
+# (Buck, 2025)
 display_columns <- column_list(
   data1 = homicide_renamed,
   data2 = geojson_renamed,
@@ -300,38 +201,6 @@ The new names show up in all three lists (for example, *solved_status*, *agency_
 
 My fourth custom function, `three_col_check()`, uses `count()` to tally the values in three columns of one DF. The `{{ }}` around each column lets me pass in plain column names, and its defaults are the victim columns *VicEthnic*, *VicRace*, and *VicSex*.
 
-```{r df-three-col-count-fx}
-#| warning: true
-
-# Count unique values for three columns in a dataset.
-
-#== column check function ==
-three_col_check <- function(
-  data,
-  col1 = VicEthnic,
-  col2 = VicRace,
-  col3 = VicSex
-) {
-  #== view first column counts ==
-  counts_1 <- data %>% count({{ col1 }})
-
-  #== view second column counts ==
-  counts_2 <- data %>% count({{ col2 }})
-
-  #== view third column counts ==
-  counts_3 <- data %>% count({{ col3 }})
-
-  #== return all summaries ==
-  return(
-    list(
-      first_summary = counts_1,
-      second_summary = counts_2,
-      third_summary = counts_3
-    )
-  )
-}
-```
-
 Then, I'll run it on the **homicide DF** to see how victims break down by ethnicity, race, and sex, and to spot any formatting problems in the labels.
 
 ```{r call-col-check-fx-1}
@@ -340,6 +209,7 @@ Then, I'll run it on the **homicide DF** to see how victims break down by ethnic
 # Count victim ethnicity/race/sex for category breakdown and formatting issues.
 
 #== call category column function ==
+# (Buck, 2025)
 three_col_check(
   homicide_renamed
 )
@@ -363,6 +233,7 @@ homicide_recoded <- homicide_renamed %>%
   filter(VicSex == "Female") %>%
   filter(VicRace != "Unknown") %>%
   mutate(
+    # (Matt, 2020; Hadley, 2024)
     victim_race_collapsed = case_when(
       VicRace %in%
         c(
@@ -372,6 +243,7 @@ homicide_recoded <- homicide_renamed %>%
         ) ~ "Other Ethnic",
       TRUE ~ VicRace # keeps "Black" and "White" as-is
     ),
+    # (Hadley, 2024)
     victim_racial_construct = if_else(
       victim_race_collapsed == "Black",
       "Black",
@@ -383,6 +255,7 @@ homicide_recoded <- homicide_renamed %>%
 nrow(homicide_recoded)
 
 #== check recoded and original race constructs ==
+# (Buck, 2025)
 three_col_check(
   data = homicide_recoded,
   col1 = victim_race_collapsed,
@@ -419,6 +292,7 @@ Then, `mutate()` builds the offender versions the same way, *offender_race_colla
 #== offender side: keep Unknown as its own category (non-predictor, descriptive only) ==
 homicide_recoded <- homicide_recoded %>%
   mutate(
+    # (Matt, 2020; Hadley, 2024)
     offender_race_collapsed = case_when(
       OffRace %in%
         c(
@@ -428,6 +302,7 @@ homicide_recoded <- homicide_recoded %>%
         ) ~ "Other Ethnic",
       TRUE ~ OffRace # keeps "Black", "White", "Unknown" as-is
     ),
+    # (Matt, 2020; Hadley, 2024)
     offender_racial_construct = case_when(
       offender_race_collapsed == "Black" ~ "Black",
       offender_race_collapsed == "Unknown" ~ "Unknown",
@@ -436,6 +311,7 @@ homicide_recoded <- homicide_recoded %>%
   )
 
 #== check recoded race constructs ==
+# (Buck, 2025)
 three_col_check(
   data = homicide_recoded,
   col1 = offender_race_collapsed,
@@ -478,22 +354,27 @@ Then, the `mutate()` with `parse_date_time()` turns *VAL_DATE* into a real date-
 #== parse for weekday fullnmae and numeric value ==
 geojson_derived <- geojson_renamed %>%
   mutate(
+    # (Spinu, n.d.)
     val_date_parsed = parse_date_time(
       VAL_DATE,
       orders = "a, d b Y H:M:S",
       tz = "GMT"
     ),
+    # (Spinu, n.d.)
     validated_week_name = wday(
       val_date_parsed,
       label = TRUE,
       abbr = FALSE
     ),
+    # (Spinu, n.d.)
     validated_day = day(val_date_parsed)
   )
 
 #== confirm no parsing failures by checking for NAs ==
 sum(
-  is.na(geojson_derived$val_date_parsed)
+  is.na(
+    geojson_derived$val_date_parsed
+  )
 )
 
 #== view derived weekname counts ==
@@ -565,6 +446,7 @@ homicide_renamed %>%
   select(
     Incident
   ) %>%
+  # (StatisticsDiscipline, 2021)
   summary()
 ```
 
@@ -580,6 +462,7 @@ To check whether *MSA* can be rebuilt from other columns, `mutate` with `paste0`
 #== verify MSA string alignment ==
 homicide_renamed %>%
   mutate(
+    # (Bobbitt, 2022)
     msa_reconstructed = paste0(
       Agency,
       ", ",
@@ -604,7 +487,12 @@ Then, I'll compare just the city part. The `sub()` with the pattern `",.*"` remo
 #== check agency and msa city alignment ==
 homicide_renamed %>%
   mutate(
-    msa_city_only = sub(",.*", "", MSA)
+    # (Hemken, 2024)
+    msa_city_only = sub(
+      ",.*",
+      "",
+      MSA
+    )
   ) %>%
   filter(
     msa_city_only != Agency
@@ -686,6 +574,7 @@ Then, `setdiff()` compares the `unique()` values in *State* against `state.name`
 # Identify any state values that do not match built-in states list.
 
 #== check for non-standard state names ==
+# (Harrell, 2026)
 setdiff(
   unique(
     homicide_recoded$State
@@ -719,6 +608,7 @@ Now, I'll build a lookup table with the `tibble()`. Its *state_name* column list
 # Lookup state names and check if every record matched.
 
 #== create state abbreviation lookup ==
+# (Mahr, 2017)
 state_lookup <- tibble(
   state_name = c(
     state.name,
@@ -761,6 +651,7 @@ homicide_recoded <- homicide_recoded %>%
 
 #== view the results ==
 names(homicide_recoded)
+
 homicide_recoded %>%
   count(state) %>%
   nrow()
@@ -802,9 +693,14 @@ municipal_joined <- homicide_municipal %>%
     )
   )
 
-#== sanity checks ==
-nrow(homicide_municipal)
-nrow(municipal_joined)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Before Join Row n()` = homicide_municipal,
+  `After Join Row n()` = municipal_joined
+)
+
+#== check NaNs ==
 sum(
   is.na(municipal_joined$agency_name)
 ) /
@@ -851,6 +747,7 @@ homicide_municipal <- homicide_recoded %>%
   ) %>%
   rename(city = Agency) %>%
   mutate(
+    # (Sanderson, 2024)
     city_match = toupper(
       trimws(city)
     )
@@ -862,6 +759,7 @@ geojson_municipal <- geojson_derived %>%
     agency_type == "LOCAL POLICE DEPARTMENT"
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     agency_city_match = toupper(
       trimws(agency_city)
     )
@@ -877,9 +775,14 @@ municipal_joined <- homicide_municipal %>%
     )
   )
 
-#== view the results ==
-nrow(homicide_municipal)
-nrow(municipal_joined)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Municipal Police Row n()` = homicide_municipal,
+  `Agency City + State Row n()` = municipal_joined
+)
+
+#== check NaNs ==
 sum(
   is.na(municipal_joined$agency_name)
 ) /
@@ -957,9 +860,11 @@ Then, to see whether -999 shows up beyond those two columns, `select` with `wher
 #== count missing placeholders ==
 geojson_renamed %>%
   select(
+    # (Barter, 2020)
     where(is.numeric)
   ) %>%
   summarise(
+    # (Barter, 2020)
     across(
       everything(),
       ~ sum(. == -999, na.rm = TRUE)
@@ -980,6 +885,7 @@ Now, the `mutate()` with `across` and `na_if` swaps every -999 value in the nume
 #== replace -999 with NA ==
 geojson_renamed <- geojson_renamed %>%
   mutate(
+    # (Barter, 2020)
     across(
       where(is.numeric),
       ~ na_if(., -999)
@@ -988,8 +894,12 @@ geojson_renamed <- geojson_renamed %>%
 
 #== sanity check: confirm the swap worked and no -999 remains ==
 geojson_renamed %>%
-  select(where(is.numeric)) %>%
+  select(
+    # (Barter, 2020)
+    where(is.numeric)
+  ) %>%
   summarise(
+    # (Barter, 2020)
     across(
       everything(),
       ~ sum(. == -999, na.rm = TRUE)
@@ -1033,16 +943,19 @@ Since the **derived DF** was built from the **renamed DF** before this fix, it s
 #== re-derive validated_week_name and validated_day ==
 geojson_derived <- geojson_renamed %>%
   mutate(
+    # (Spinu, n.d.)
     val_date_parsed = parse_date_time(
       VAL_DATE,
       orders = "a, d b Y H:M:S",
       tz = "GMT"
     ),
+    # (Spinu, n.d.)
     validated_week_name = wday(
       val_date_parsed,
       label = TRUE,
       abbr = FALSE
     ),
+    # (Spinu, n.d.)
     validated_day = day(val_date_parsed)
   )
 
@@ -1069,6 +982,7 @@ geojson_municipal <- geojson_derived %>%
     agency_type == "LOCAL POLICE DEPARTMENT"
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     agency_city_match = toupper(
       trimws(agency_city)
     )
@@ -1084,9 +998,14 @@ municipal_joined <- homicide_municipal %>%
     )
   )
 
-#== view counts and match rates ==
-nrow(homicide_municipal)
-nrow(municipal_joined)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `L.E. Agency City Row n()` = homicide_municipal,
+  `Joined City + State Row n()` = municipal_joined
+)
+
+#== check NaNs ==
 sum(
   is.na(municipal_joined$agency_population)
 ) /
@@ -1158,6 +1077,7 @@ geojson_municipal_dedup <- geojson_municipal %>%
     agency_city_match,
     agency_state
   ) %>%
+  # (Batra, et al., 2021)
   slice_max(
     agency_population,
     n = 1,
@@ -1197,9 +1117,14 @@ municipal_joined <- homicide_municipal %>%
     )
   )
 
-#== view row counts and NA rates ==
-nrow(homicide_municipal)
-nrow(municipal_joined)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Duplicated DF Row n()` = homicide_municipal,
+  `De-Duplicated DF Row n()` = municipal_joined
+)
+
+#== check NaN rates ==
 sum(
   is.na(municipal_joined$agency_population)
 ) /
@@ -1219,25 +1144,28 @@ Next up are the sheriff records. This join needs a county name on both sides sin
 
 # Sample real county-related values from both the homicide and geojson datasets.
 
-#== homicide data sample (county+state name string) ==
+#== homicide data sample ==
 homicide_df %>%
   distinct(
     CNTYFIPS
   ) %>%
+  # (Batra, et al., 2021)
   slice_sample(n = 15)
 
-#== geojson data sample (county name string) ==
+#== geojson data sample ==
 geojson_df %>%
   distinct(
     COUNTY
   ) %>%
+  # (Batra, et al., 2021)
   slice_sample(n = 15)
 
-#== geojson data sample (county FIPS numeric) ==
+#== geojson data sample ==
 geojson_df %>%
   distinct(
     COUNTYFIPS
   ) %>%
+  # (Batra, et al., 2021)
   slice_sample(n = 15)
 ```
 
@@ -1253,6 +1181,7 @@ Then, I'll count two values since Puerto Rico shows up in the agency file, and *
 #== homicide data (PR value) ==
 homicide_df %>%
   filter(
+    # (Robinson, et al., 2026)
     grepl(
       ", PR",
       CNTYFIPS
@@ -1263,6 +1192,7 @@ homicide_df %>%
 #== homicide data (STE. GENEVIEVE value) ==
 homicide_df %>%
   filter(
+    # (Robinson, et al., 2026)
     grepl(
       "GENEVIEVE",
       CNTYFIPS,
@@ -1291,6 +1221,7 @@ To see how the Ste. Genevieve records are written, the same `filter()` with `dis
 #== view genevieve distinct values ==
 homicide_df %>%
   filter(
+    # (Robinson, et al., 2026)
     grepl(
       "GENEVIEVE",
       CNTYFIPS,
@@ -1314,6 +1245,7 @@ Now, I'll split *CNTYFIPS* into its two parts. The `separate_wider_delim()` spli
 
 #== split CNTYFIPS into name and state ==
 homicide_subset <- homicide_recoded %>%
+  # (Prabhakaran, 2026c)
   separate_wider_delim(
     CNTYFIPS,
     delim = ", ",
@@ -1325,6 +1257,7 @@ homicide_subset <- homicide_recoded %>%
     cols_remove = FALSE
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     county_agency = toupper(
       trimws(county_agency)
     )
@@ -1333,6 +1266,7 @@ homicide_subset <- homicide_recoded %>%
 #== case normalize Ste. Genevieve category ==
 homicide_subset %>%
   filter(
+    # (Robinson, et al., 2026)
     grepl(
       "GENEVIEVE",
       county_agency,
@@ -1361,6 +1295,7 @@ geojson_derived <- geojson_derived %>%
     agency_county_fips = COUNTYFIPS
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     agency_county = toupper(
       trimws(agency_county)
     )
@@ -1384,7 +1319,7 @@ Now, `filter()` keeps the *"Sheriff"* records from the **subset DF** as the **sh
 ```{r sheriff-subset}
 #| warning: true
 
-# Filter both datasets for the sheriff-type agaencies.
+# Filter both datasets for the sheriff-type agencies.
 
 #== homicide subset ==
 homicide_sheriff <- homicide_subset %>%
@@ -1398,9 +1333,12 @@ geojson_sheriff <- geojson_derived %>%
     agency_type == "SHERIFF'S OFFICE"
   )
 
-#== view row counts ==
-nrow(homicide_sheriff)
-nrow(geojson_sheriff)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Homicide Sheriff Row n()` = homicide_sheriff,
+  `LE Sheriff Row n()` = geojson_sheriff
+)
 ```
 
 The **sheriff DF** has *41,860* records, and the **sheriff agency DF** has *3,839* rows.
@@ -1422,11 +1360,14 @@ sheriff_joined <- homicide_sheriff %>%
     )
   )
 
-#== view row counts ==
-nrow(homicide_sheriff)
-nrow(sheriff_joined)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Before Join Row n()` = homicide_sheriff,
+  `After Join Row n()` = sheriff_joined
+)
 
-#== view NA rate ==
+#== check NaN rate ==
 sum(
   is.na(sheriff_joined$agency_population)
 ) /
@@ -1435,7 +1376,7 @@ sum(
 
 The **sheriff joined DF** grew from *41,860* to *157,101* rows, 115,241 more, with a many-to-many warning, and the NA proportion is *0.7515293*, or about 75%. So, like the municipal join, it has both duplicate agency rows and records without a population.
 
-To find out why, `count()` with `filter()` and `arrange(desc())` lists the county and state pairs that show up more than once in the **sheriff agency DF**. Then, `distinct()` with `rename()` builds a one-column list of county names from each side, and `setdiff()` lists the homicide county names that don't appear on the agency side.
+To find out why, the `count()` with `filter` and the `arrange(desc())` lists the county and state pairs that show up more than once in the **sheriff agency DF**. Then, `distinct()` with `rename()` builds a one-column list of county names from each side, and `setdiff()` lists the homicide county names that don't appear on the agency side.
 
 ```{r sheriff-diagnostics}
 #| warning: true
@@ -1467,6 +1408,7 @@ geojson_side <- geojson_sheriff %>%
   rename(county = agency_county)
 
 #== check for string mismatch ==
+# (Harrell, 2026)
 setdiff(
   homicide_side,
   geojson_side
@@ -1485,6 +1427,7 @@ Next, I'll save the `setdiff()` result as `county_mismatch` so later chunks can 
 
 #== assign the setdiff mismatches ==
 county_mismatch <- setdiff(
+  # (Harrell, 2026)
   homicide_side,
   geojson_side
 )
@@ -1620,6 +1563,7 @@ That leaves four names that are written differently on each side. The `tribble()
 # Create a lookup table to compare column content row-by-row, apply corrections, and join to homicide.
 
 #== build original -> correct columns ==
+# (Mahr, 2017)
 county_lookup <- tibble::tribble(
   ~county_agency     , ~county_corrected ,
   "DE KALB"          , "DEKALB"          ,
@@ -1635,6 +1579,7 @@ homicide_subset <- homicide_subset %>%
     by = "county_agency"
   ) %>%
   mutate(
+    # (Harris, 2024)
     county_agency = coalesce(
       county_corrected,
       county_agency
@@ -1648,7 +1593,7 @@ homicide_subset <- homicide_subset %>%
 
 The **subset DF** still has *197,147* records and *32* columns, the 30 from before plus *county_agency* and *county_state*, so the lookup fixed the spellings without adding or losing any records.
 
-Since the **sheriff DF** was built before the fix, the same `filter()` rebuilds it from the corrected **subset DF**, and `nrow()` counts its records.
+Since the **sheriff DF** was built before the fix, the same `filter()` rebuilds it from the corrected **subset DF**, and `nrow` counts its records.
 
 ```{r rebuild-homicide-sheriff}
 #| warning: true
@@ -1667,7 +1612,7 @@ nrow(homicide_sheriff)
 
 It still has *41,860* records, since the fix only changed spellings.
 
-Finally, I'll deduplicate the **sheriff agency DF** the same way as the municipal records. The `filter()` drops the rows without a population, `group_by()` groups by *agency_county* and *agency_state*, and `slice_max()` keeps the row with the largest *agency_population*, with `with_ties = FALSE` and `ungroup()`, saving the **sheriff deduplicated DF** (`geo_sheriff_dedup`). Then, `count()` with `filter()` and `nrow()` checks for duplicates, and the `left_join()` reruns the join, followed by the row counts and NA proportion.
+Finally, I'll deduplicate the **sheriff agency DF** the same way as the municipal records. The `filter()` drops the rows without a population, `group_by()` groups by *agency_county* and *agency_state*, and `slice_max()` keeps the row with the largest *agency_population*, with `with_ties = FALSE` and the `ungroup()`, saving the **sheriff deduplicated DF** (`geo_sheriff_dedup`). Then, the `count()` with `filter` and `nrow` checks for duplicates, and the `left_join()` reruns the join, followed by the row counts and NA proportion.
 
 ```{r sheriff-join-2}
 #| warning: true
@@ -1685,6 +1630,7 @@ geo_sheriff_dedup <- geojson_sheriff %>%
     agency_county,
     agency_state
   ) %>%
+  # (Batra, et al., 2021)
   slice_max(
     agency_population,
     n = 1,
@@ -1713,11 +1659,14 @@ sheriff_joined <- homicide_sheriff %>%
     )
   )
 
-#== view row counts & NA rate ==
-nrow(homicide_sheriff)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Latest Sheriff Row n()` = homicide_sheriff,
+  `Re-Join Sheriff Row n()` = sheriff_joined
+)
 
-nrow(sheriff_joined)
-
+#== check NaN rates ==
 sum(
   is.na(sheriff_joined$agency_population)
 ) /
@@ -1746,6 +1695,7 @@ homicide_state_le <- homicide_subset %>%
     city = Agency
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     city_match = toupper(
       trimws(city)
     )
@@ -1757,14 +1707,18 @@ geojson_state_le <- geojson_derived %>%
     agency_type == "PRIMARY STATE AGENCY"
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     agency_city_match = toupper(
       trimws(agency_city)
     )
   )
 
-#== view row counts ==
-nrow(homicide_state_le)
-nrow(geojson_state_le)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Homicide Primary State Row n()` = homicide_state_le,
+  `LE Primary State Row n()` = geojson_state_le
+)
 ```
 
 From the output shows the **state police DF** has *7,081* records, and the **state agency DF** has *1,895* rows.
@@ -1786,11 +1740,14 @@ state_le_joined <- homicide_state_le %>%
     )
   )
 
-#== view row counts ==
-nrow(homicide_state_le)
-nrow(state_le_joined)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Before City + State Join Row n()` = homicide_state_le,
+  `After City + State Join Row n()` = state_le_joined
+)
 
-#== view NA rate ==
+#== check NaN rate ==
 sum(
   is.na(state_le_joined$agency_population)
 ) /
@@ -1815,6 +1772,7 @@ homicide_special <- homicide_subset %>%
   ) %>%
   rename(city = Agency) %>%
   mutate(
+    # (Sanderson, 2024)
     city_match = toupper(
       trimws(city)
     )
@@ -1826,14 +1784,18 @@ geojson_special <- geojson_derived %>%
     agency_type == "SPECIAL JURISDICTION"
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     agency_city_match = toupper(
       trimws(agency_city)
     )
   )
 
-#== view row counts ==
-nrow(homicide_special)
-nrow(geojson_special)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Homicide Special Police Row n()` = homicide_special,
+  `LE Special Jurisdiction Row n()` = geojson_special
+)
 ```
 
 The **special police DF** has *450* records, and the **special agency DF** has *1,953* rows.
@@ -1855,11 +1817,14 @@ special_joined <- homicide_special %>%
     )
   )
 
-#== view row counts ==
-nrow(homicide_special)
-nrow(special_joined)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Before Special Type Join Row n()` = homicide_special,
+  `After Special Type Join Row n()` = special_joined
+)
 
-#== view NA rate ==
+#== check NaN rate ==
 sum(
   is.na(special_joined$agency_population)
 ) /
@@ -1886,6 +1851,7 @@ geo_special_dedup <- geojson_special %>%
     agency_city_match,
     agency_state
   ) %>%
+  # (Batra, et al., 2021)
   slice_max(
     agency_population,
     n = 1,
@@ -1914,12 +1880,14 @@ special_joined <- homicide_special %>%
     )
   )
 
-#== view row counts ==
-nrow(homicide_special)
+#== call the total rows function ==
+# (Buck, 2025)
+total_rows(
+  `Before Special De-Dupe Row n()` = homicide_special,
+  `After Special De-Dupe Row n()` = special_joined
+)
 
-nrow(special_joined)
-
-#== view NA rate by row ==
+#== check NaN rate by row ==
 sum(
   is.na(special_joined$agency_population)
 ) /
@@ -1958,7 +1926,7 @@ geojson_state_le %>%
   ) %>%
   nrow()
 
-#== count existing cities in homicide that are in geojson ==
+#== count alike + existing cities ==
 sum(
   unique(
     homicide_state_le$city_match
@@ -1981,6 +1949,7 @@ homicide_state_le %>%
   distinct(
     city
   ) %>%
+  # (Batra, et al., 2021)
   slice_sample(n = 15)
 
 #== geojson-side sample ==
@@ -1988,6 +1957,7 @@ geojson_state_le %>%
   distinct(
     agency_city
   ) %>%
+  # (Batra, et al., 2021)
   slice_sample(n = 15)
 ```
 
@@ -2013,12 +1983,13 @@ homicide_county_police <- homicide_subset %>%
     city = Agency
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     city_match = toupper(
       trimws(city)
     )
   )
 
-#== view row count ==
+#== check row count ==
 nrow(homicide_county_police)
 ```
 
@@ -2036,13 +2007,15 @@ homicide_county_police %>%
   distinct(
     city
   ) %>%
+  # (Batra, et al., 2021)
   slice_sample(n = 15)
 
-#== geojson-side sample (reuse the deduped municipal subset) ==
+#== geojson-side sample ==
 geojson_municipal_dedup %>%
   distinct(
     agency_city
   ) %>%
+  # (Batra, et al., 2021)
   slice_sample(n = 15)
 ```
 
@@ -2058,6 +2031,7 @@ Then, `mutate` with `toupper` and `trimws` adds *name_match* to the **county pol
 #== normalize department name ==
 homicide_county_police <- homicide_county_police %>%
   mutate(
+    # (Sanderson, 2024)
     name_match = toupper(
       trimws(city)
     )
@@ -2066,12 +2040,13 @@ homicide_county_police <- homicide_county_police %>%
 #== normalize agency_name across ==
 geojson_name_check <- geojson_derived %>%
   mutate(
+    # (Sanderson, 2024)
     agency_name_match = toupper(
       trimws(agency_name)
     )
   )
 
-#== count existing department names ==
+#== count alike + existing department names ==
 sum(
   unique(
     homicide_county_police$name_match
@@ -2110,6 +2085,7 @@ homicide_county_police %>%
 geojson_name_check %>%
   filter(
     agency_type == "LOCAL POLICE DEPARTMENT",
+    # (Robinson, et al., 2026)
     grepl(
       "COUNTY",
       agency_name_match
@@ -2134,15 +2110,21 @@ Then, I'll strip those extra words. The `mutate()` adds *agency_name_base* to th
 geojson_name_check <- geojson_name_check %>%
   mutate(
     agency_name_base = agency_name_match %>%
+      # (Hemken, 2024)
       sub(
         " - .*$",
         "",
         .
       ) %>%
-      sub(" HEADQUARTERS$", "", .)
+      # (Hemken, 2024)
+      sub(
+        " HEADQUARTERS$",
+        "",
+        .
+      )
   )
 
-#== re-count stripped names ==
+#== re-count alike, stripped names ==
 sum(
   unique(
     homicide_county_police$name_match
@@ -2206,6 +2188,7 @@ unmatched_roots <- c(
 #== find names containing the root names ==
 geojson_name_check %>%
   filter(
+    # (Robinson, et al., 2026; Bobbit, 2023)
     grepl(
       paste(
         unmatched_roots,
@@ -2233,6 +2216,7 @@ So, the same search adds *"LOCAL POLICE DEPARTMENT"* to the `filter()`, since th
 geojson_name_check %>%
   filter(
     agency_type == "LOCAL POLICE DEPARTMENT",
+    # (Robinson, et al., 2026; Bobbitt, 2023)
     grepl(
       paste(
         unmatched_roots,
@@ -2284,6 +2268,7 @@ geojson_name_check %>%
   filter(
     agency_type == "LOCAL POLICE DEPARTMENT",
     agency_state %in% unmatched_bystate$state,
+    # (Robinson, et al., 2026; Bobbitt, 2023)
     grepl(
       paste(
         unmatched_roots,
@@ -2321,6 +2306,7 @@ geojson_name_check %>%
         "GA",
         "MD"
       ),
+    # (Robinson, et al., 2026)
     grepl(
       "NORTH SLOPE|MIAMI-DADE|CHATHAM|MONTGOMERY COUNTY|PRINCE GEORGE",
       agency_name_base
@@ -2359,6 +2345,7 @@ geojson_name_check %>%
         "NY",
         "VA"
       ),
+    # (Robinson, et al., 2026)
     grepl(
       "BRISTOL BAY|WESTCHESTER|HENRICO",
       agency_name_base
@@ -2388,9 +2375,10 @@ Now, the `tribble()` builds a lookup table (`county_police_lookup`) pairing the 
 ```{r county-police-lookup}
 #| warning: true
 
-# Build lookup table to map to the homicide department names (unmatched_bystate -> agency_name_base).
+# Build lookup table to map to the homicide department names.
 
-#== build original -> corrected columns ==
+#== create homicide department name lookup ==
+# (Mahr, 2017)
 county_police_lookup <- tibble::tribble(
   ~name_match                                , ~name_corrected                                                                   ,
   "NORTH SLOPE BOROUGH"                      , "NORTH SLOPE BOROUGH POLICE DEPARTMENT / NORTH SLOPE BOROUGH CORRECTIONAL CENTER" ,
@@ -2418,6 +2406,7 @@ homicide_county_police <- homicide_county_police %>%
     by = "name_match"
   ) %>%
   mutate(
+    # (Harris, 2024)
     name_match = coalesce(
       name_corrected,
       name_match
@@ -2437,6 +2426,7 @@ geo_county_police_dedup <- geojson_name_check %>%
   group_by(
     agency_name_base
   ) %>%
+  # (Batra, et al., 2021)
   slice_max(
     agency_population,
     n = 1,
@@ -2505,6 +2495,7 @@ homicide_no_match <- homicide_subset %>%
     city = Agency
   ) %>%
   mutate(
+    # (Sanderson, 2024)
     city_match = toupper(
       trimws(city)
     ),
@@ -2568,6 +2559,7 @@ Then, the `Reduce()` with `intersect` compares the `names()` of all six groups t
 # Keep the common columns of the six subsets, then combine them.
 
 #== find columns ==
+# (Prabhakaran, 2026)
 common_cols <- Reduce(
   intersect,
   list(
@@ -2584,26 +2576,32 @@ common_cols <- Reduce(
 homicide_final <- bind_rows(
   select(
     municipal_joined,
+    # (Olumide, 2025)
     all_of(common_cols)
   ),
   select(
     sheriff_joined,
+    # (Olumide, 2025)
     all_of(common_cols)
   ),
   select(
     state_le_joined,
+    # (Olumide, 2025)
     all_of(common_cols)
   ),
   select(
     special_joined,
+    # (Olumide, 2025)
     all_of(common_cols)
   ),
   select(
     homicide_county_police,
+    # (Olumide, 2025)
     all_of(common_cols)
   ),
   select(
     homicide_no_match,
+    # (Olumide, 2025)
     all_of(common_cols)
   )
 )
@@ -2624,7 +2622,7 @@ To double-check, printing `common_cols` lists the shared column names, and addin
 #== show common columns ==
 common_cols
 
-#== confirm expected total ==
+#== check total row counts ==
 nrow(municipal_joined) +
   nrow(sheriff_joined) +
   nrow(state_le_joined) +
@@ -2669,7 +2667,7 @@ homicide_final <- homicide_final %>%
     record_year %in% 2017:2020
   )
 
-#== display row count ==
+#== check row count ==
 nrow(homicide_final)
 ```
 
@@ -2734,7 +2732,7 @@ weather_monthly <- weather_renamed %>%
     .groups = "drop"
   )
 
-#== display row count ==
+#== check row count ==
 nrow(weather_monthly)
 ```
 
@@ -2810,6 +2808,88 @@ After the run, the **weather DF** has *59* state values, written as two-letter a
 
 <br>
 
+## Correct county names to Census spellings
+
+Because I'll be using the U.S. Census Bureau's state and county shapes from the `tigris` package during the analysis, each county name in *CNTYFIPS* needs to match its Census name exactly, so every record can be paired with its county shape. Eleven county names in *CNTYFIPS* are spelled differently from the Census Bureau's 2020 county names, such as *De Kalb, GA* instead of *DeKalb, GA*, and municipal police records in Richmond and Roanoke, Virginia, are listed under the county names even though they belong to the independent cities of the same names. A lookup table pairs each misspelled name with its Census spelling; a second step moves the Richmond and Roanoke city records to their city names, and both corrections are applied before the final data is saved.
+
+```{r cntyfips-census-names-lookup}
+#| warning: true
+
+# Recode differently spelled county names from the 2020 Census names.
+
+#== create county Census name lookup ==
+# (Mahr, 2017)
+cntyfips_lookup <- tibble::tribble(
+  ~CNTYFIPS              , ~cntyfips_corrected        ,
+  "De Kalb, GA"          , "DeKalb, GA"               ,
+  "De Kalb, MO"          , "DeKalb, MO"               ,
+  "De Soto, FL"          , "DeSoto, FL"               ,
+  "De Witt, TX"          , "DeWitt, TX"               ,
+  "La Porte, IN"         , "LaPorte, IN"              ,
+  "La Salle, IL"         , "LaSalle, IL"              ,
+  "La Salle, LA"         , "LaSalle, LA"              ,
+  "Dona Ana, NM"         , "Doña Ana, NM"             ,
+  "Carson City city, NV" , "Carson City, NV"          ,
+  "District of Columbia" , "District of Columbia, DC" ,
+  "Clifton Forge, VA"    , "Alleghany, VA"
+)
+
+#== apply corrections ==
+homicide_final <- homicide_final %>%
+  left_join(
+    cntyfips_lookup,
+    by = "CNTYFIPS"
+  ) %>%
+  mutate(
+    # (Harris, 2024)
+    CNTYFIPS = coalesce(
+      cntyfips_corrected,
+      CNTYFIPS
+    )
+  ) %>%
+  select(-cntyfips_corrected)
+```
+
+```{r cntyfips-census-names-reassign}
+#| warning: true
+
+# Move Virginia city records to their city names.
+
+#== move Virginia city police records to their city names ==
+homicide_final <- homicide_final %>%
+  mutate(
+    # (Matt, 2020; Hadley, 2024)
+    CNTYFIPS = case_when(
+      CNTYFIPS == "Richmond, VA" &
+        Agentype == "Municipal police" ~ "Richmond city, VA",
+      CNTYFIPS == "Roanoke, VA" &
+        Agentype == "Municipal police" ~ "Roanoke city, VA",
+      TRUE ~ CNTYFIPS
+    )
+  )
+
+#== check rows held ==
+nrow(
+  homicide_final
+)
+
+#== check corrected names and their records ==
+homicide_final %>%
+  filter(
+    CNTYFIPS %in%
+      c(
+        cntyfips_lookup$cntyfips_corrected,
+        "Richmond city, VA",
+        "Roanoke city, VA"
+      )
+  ) %>%
+  count(CNTYFIPS)
+```
+
+After the corrections, the data still has *15,766* records, so no rows were added or lost. All *13* corrected names now appear, including *43* Richmond city and *9* Roanoke city records that were moved from their county names.
+
+<br>
+
 ## Save, reload, and recheck the final data
 
 With the year filter and weather in place, `arrow::write_parquet()` saves the **final DF** as a Parquet file, and `here::here()` builds its path to the processed data folder. Parquet keeps each column's data type, so the file reads back the same way it was saved.
@@ -2820,6 +2900,7 @@ With the year filter and weather in place, `arrow::write_parquet()` saves the **
 # Save the finalized, year-filtered, weather-joined homicide dataset as a Parquet file.
 
 #== write to processed data folder ==
+# (Olumide, 2025)
 arrow::write_parquet(
   homicide_final,
   here::here(
@@ -2838,7 +2919,9 @@ Then, `arrow::read_parquet()` reads the file back in, saving it as the **reloade
 # Reload the saved Parquet dataset.
 
 #== read data ==
+# (Gillespie, 2021)
 homicide_final_reloaded <- arrow::read_parquet(
+  # (Olumide, 2025)
   here::here(
     "data",
     "processed",
@@ -2846,8 +2929,11 @@ homicide_final_reloaded <- arrow::read_parquet(
   )
 )
 
-#== display row count comparison ==
-(nrow(homicide_final_reloaded) == nrow(homicide_final))
+#== compare row count ==
+(nrow(
+  homicide_final_reloaded
+) ==
+  nrow(homicide_final))
 ```
 
 It prints *TRUE*, so the **reloaded DF** has the same number of records as the **final DF**.
@@ -2886,6 +2972,7 @@ homicide_final_reloaded %>%
     location_match
   ) %>%
   summarise(
+    # (Barter, 2020)
     across(
       everything(),
       ~ sum(
@@ -2961,6 +3048,7 @@ From the **reloaded DF**, the `mutate()` with `case_when` adds a new column, *ju
 #== build the dataset ==
 homicide_modeling_df <- homicide_final_reloaded %>%
   mutate(
+    # (Matt, 2020; Hadley, 2024)
     jurisdiction_match = case_when(
       is.na(agency_population) ~ "Surrounding Area",
       TRUE ~ "Within Jurisdiction"
@@ -3027,6 +3115,7 @@ To finish, I'll save the **modeling DF** with `arrow::write_parquet()` as its ow
 # Save the modeling dataset as a Parquet file.
 
 #== write to data/processed folder ==
+# (Olumide, 2025)
 arrow::write_parquet(
   homicide_modeling_df,
   here::here(
@@ -3037,6 +3126,7 @@ arrow::write_parquet(
 )
 
 #== display row/col counts ==
+## (Olumide, 2025)
 arrow::read_parquet(
   here::here(
     "data",
@@ -3055,28 +3145,39 @@ In conclusion, the saved file has *15,766* rows and *35* columns, one more than 
 
 Last, this chunk is for listing the installed version of each of the ten packages named inside `c()`. I commented it out because it doesn't need to run every time the script runs, but once it's uncommented, the expected output is each package name with its version number printed below it.
 
-```{r package-list}
-# Produce the package list for C3.
+```{r cleaning-package-list}
+# Produce the package list for C3 that are included in this file.
 
 #== display package versions ==
-# sapply(
-#   c(
-#     "dplyr",
-#     "tidyr",
-#     "stringr",
-#     "stringi",
-#     "lubridate",
-#     "readr",
-#     "arrow",
-#     "here",
-#     "ggplot2",
-#     "rmarkdown"
-#   ),
-#   function(p) {
-#     as.character(
-#       packageVersion(p)
-#     )
-#   }
-# )
+# (Tang, 2023)
+sapply(
+  c(
+    "dplyr",
+    "tidyr",
+    "lubridate",
+    "readr",
+    "here",
+    "ggplot2",
+    "rmarkdown",
+    "sessioninfo"
+  ),
+  function(p) {
+    as.character(
+      packageVersion(p)
+    )
+  }
+)
 ```
 
+<br>
+
+## Session
+
+```{r cleaning-session}
+# View comprehensive script summary and metadata.
+
+#== enhanced method ==
+sessioninfo::session_info()
+``` 
+
+<br>
