@@ -30,6 +30,7 @@ execute:
 Before loading anything, I set R to print numbers in full decimal form instead of scientific notation so the p-values in the coefficient tables are easier to read.
 
 ```{r set-options}
+#| label: 02-set-options
 #| warning: true
 
 # Print values in decimal form instead of scientific notation.
@@ -46,6 +47,7 @@ options(
 Now, I'll load the packages and the helper utils.R script.
 
 ```{r load-packages}
+#| label: 02-load-packages
 #| echo: true
 #| output: false
 #| results: hide
@@ -66,6 +68,7 @@ library(sessioninfo)
 ```
 
 ```{r load-utils-file}
+#| label: 02-load-utils-file
 #| warning: true
 
 # Source the total_rows function.
@@ -81,6 +84,7 @@ source(
 I'll also load the modeling dataset produced by the cleaning script.
 
 ```{r load-model-data}
+#| label: 02-load-model-data
 #| warning: true
 
 # Load the homicide modeling dataframe.
@@ -125,6 +129,7 @@ runs. Agency population and jurisdiction location are added later, after the mis
 the TidyModels.org article *"Preprocess your data with recipes,"* and R-Statistics.co's *"parsnip fit() in R: Train a Model Specification"* (Example 4).
 
 ```{r prototype-weather-model}
+#| label: 02-prototype-weather-model
 #| warning: true
 
 # Verify logistic regression runs with the four weather features.
@@ -217,6 +222,7 @@ After running, the model showed that it converged. It predicted 4.5% of victims 
 Before the full model is built, the records are split into a training set (11,824 of the records) for building the model and a testing set (the remaining 3,942) for checking how it does on records it hasn't seen. The split keeps the share of Black victims about the same in both sets.
 
 ```{r split-data}
+#| label: 02-split-data
 #| warning: true
 
 # Split the modeling data into training and testing sets.
@@ -287,6 +293,7 @@ As you can see, both sets have nearly the same mix: *0.64318* Not Black and *0.3
 The recipe lists the outcome and the six predictors. It fills the missing agency population values with the median from the training set, and turns jurisdiction location into a 0/1 column the model can read.
 
 ```{r build-recipe}
+#| label: 02-build-recipe
 #| warning: true
 
 # Specify the preprocessing steps, and set up the outcome and the six predictors.
@@ -321,6 +328,7 @@ homicide_recipe
 The recipe and the logistic regression are bundled into one workflow and fit on the training set, so the same steps will be applied when the model is checked on the testing set.
 
 ```{r fit-full-model}
+#| label: 02-fit-full-model
 #| warning: true
 
 # Fit the full logistic regression on the training set.
@@ -379,6 +387,7 @@ The full model converged (TRUE). Five predictors have positive estimates: temper
 Now the testing set is used for the first time. The fitted workflow applies the same recipe and model to the 3,942 testing records, so the model is checked on records it hasn't seen.
 
 ```{r predict-test-set}
+#| label: 02-predict-test-set
 #| warning: true
 
 # Predict the outcome for the testing set with the fitted workflow.
@@ -425,6 +434,7 @@ The testing set kept all *3,942* records and now has *38* columns because the `a
 Now it's time to score the predictions against the benchmarks set before testing, an accuracy above the *64.3%* always Not Black baseline and a ROC AUC above *0.5*, along with sensitivity, specificity, and the J-index to show how well each outcome level is identified.
 
 ```{r evaluate-metrics}
+#| label: 02-evaluate-metrics
 #| warning: true
 
 # Score the testing-set predictions with different performance metrics.
@@ -465,6 +475,7 @@ The model's accuracy is *0.63978*, which is below the *0.64307* baseline, and it
 The coefficients in the full model are on the log-odds scale, so here they're converted to odds ratios with 95% confidence intervals, and each predictor's p-value is compared with alpha (.05) to test the null hypothesis.
 
 ```{r odds-ratios}
+#| label: 02-odds-ratios
 #| warning: true
 
 # Convert the full model's coefficients to odds ratios with 95% confidence intervals.
@@ -533,6 +544,7 @@ None of the 95% confidence intervals include 1, which agrees with the p-values, 
 The p-values show that every predictor is associated with the outcome, but they don’t indicate whether each association is large enough to matter. To assess this, I'll compare the change in the expected proportion of Black victims for each predictor with the 5.5-point difference between the two jurisdiction groups identified in the exploratory analysis. First, I'll calculate the 1st quartile, median, and 3rd quartile of each numeric predictor in the training set. These values represent low, middle, and high values for each predictor and will show how much the expected proportion of Black victims changes as each predictor moves from low to high.
 
 ```{r predictor-quartiles}
+#| label: 02-predictor-quartiles
 #| warning: true
 
 # Find each predictor's 1st quartile, median, and 3rd quartile in the training set.
@@ -589,6 +601,7 @@ The hypothetical records will use the training set's medians: a temperature of *
 Then, because the odds ratios describe changes in the odds rather than in percentage points, I'll build two hypothetical records that differ only in jurisdiction location, holding the weather and agency population at their medians, and predict the proportion of Black victims for each, so I can compare jurisdiction's effect with the 5.5-point difference seen in the exploratory analysis.
 
 ```{r jurisdiction-practical}
+#| label: 02-jurisdiction-practical
 #| warning: true
 
 # Predict the proportion of Black victims for each jurisdiction group.
@@ -646,6 +659,7 @@ With the weather and agency population held at their medians, the model predicts
 Next, since the numeric predictors don't have groups, I'll build two hypothetical records for each one that differ only in that predictor, one at its 1st quartile and one at its 3rd quartile. The other numeric predictors stay at their medians, and jurisdiction location is set to Within Jurisdiction, the group with most of the records. Then I'll predict the proportion of Black victims for each record and compare each predictor's change with the 5.5-point difference.
 
 ```{r predictor-practical}
+#| label: 02-predictor-practical
 #| warning: true
 
 # Predict the proportion of Black victims as each numeric predictor rises from the first to third quartile.
@@ -765,6 +779,7 @@ Moving each numeric predictor from its 1st to its 3rd quartile changes the predi
 Next, I'll plot the model's calibration curve on the testing set. The predictions are split into ten equal-size bins, and each bin's average predicted probability of Black is compared with the actual proportion of Black victims in that bin, so the curve shows whether the model's probabilities match what actually happened.
 
 ```{r calibration-curve-fx}
+#| label: 02-calibration-curve-fx
 #| warning: true
 
 # Call the calibration-curve function from the utils script.
@@ -788,6 +803,7 @@ calibration_table %>%
 ```
 
 ```{r calibration-curve-plot}
+#| label: 02-calibration-curve-plot
 #| warning: false
 #| fig-width: 14
 #| fig-height: 11
@@ -863,6 +879,7 @@ The model's average predicted probability of being Black ranges from *0.17436* i
 Then, I'll plot each predictor's odds ratio with its 95% confidence interval as a forest plot. Because the numeric predictors are measured in different units, such as one person, one degree, or one inch, I'll scale each numeric predictor's odds ratio and confidence interval to its quartile range, the change from its 1st to its 3rd quartile (pakalla, 2020; Noah, 2020), so every odds ratio describes the same low-to-high change used in the practical-significance check. Jurisdiction location stays as is, comparing Within Jurisdiction with Surrounding Area.
 
 ```{r odds-ratio-forest}
+#| label: 02-odds-ratio-forest
 #| warning: false
 
 # Build each predictor's odds ratio per quartile-range increase, with Wald 95% confidence intervals.
@@ -968,6 +985,7 @@ odds_ratio_table %>%
 ```
 
 ```{r odds-ratio-forest-plot}
+#| label: 02-odds-ratio-forest-plot
 #| warning: true
 #| fig-width: 12
 #| fig-height: 7
@@ -1053,6 +1071,7 @@ Finally, I'll show the practical-significance results in a paired plot. For each
 First, the previously saved predictions, including the jurisdiction pair and five quartile pairs, are combined into one table. Each row is labeled with its predictor and as Low or High, allowing the two values for each predictor to be connected by a line.
 
 ```{r practical-significance}
+#| label: 02-practical-significance
 #| warning: true
 
 # Build the predicted proportion data and a table.
@@ -1104,6 +1123,7 @@ practical_long_table
 ```
 
 ```{r practical-significance-plot}
+#| label: 02-practical-significance-plot
 #| warning: false
 #| fig-width: 12
 #| fig-height: 8
@@ -1219,6 +1239,8 @@ All six predictors are statistically significant, but the full model's testing-s
 List the installed versions of each package and print them out.
 
 ```{r model-package-list}
+#| label: 02-model-package-list
+
 # Produce the package list for C3 that are included in this file.
 
 #== display package versions ==
@@ -1247,6 +1269,8 @@ sapply(
 ## Session
 
 ```{r modeling-session}
+#| label: 02-modeling-session
+
 # View comprehensive script summary and metadata.
 
 #== enhanced method ==
