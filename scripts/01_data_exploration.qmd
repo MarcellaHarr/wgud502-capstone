@@ -30,6 +30,7 @@ execute:
 This script explores the analysis data that the cleaning script saved to see how complete the outcome and the six predictors are, how they're distributed, and how they relate to each other. But first, I'll load the packages and read in the Parquet file, *homicide_modeling.parquet*, which gets its name from being the same file the modeling script reads later, and the *.weather_raw* dataframe to check the units of the four weather measures, since the analysis data doesn't include them. I'll also load the helper functions and the plot theme from the utils.R file.
 
 ```{r load-packages}
+#| label: 01-load-packages
 #| echo: true
 #| output: false
 #| results: hide
@@ -54,6 +55,7 @@ library(sessioninfo)
 ```
 
 ```{r load-utils-file}
+#| label: 01-load-utils-file
 #| warning: true
 
 # Source the total_rows function.
@@ -67,6 +69,7 @@ source(
 ```
 
 ```{r load-eda-data}
+#| label: 01-load-eda-data
 #| warning: true
 
 # Read the analysis data saved by the cleaning script and confirm its size.
@@ -89,6 +92,7 @@ homicide_eda %>%
 The analysis data has *15,766* records and *35* columns, the same size the cleaning script printed when it saved the file.
 
 ```{r load-raw-weather}
+#| label: 01-load-raw-weather
 #| warning: true
 
 # Read the raw weather file and check the units of the weather measures.
@@ -133,6 +137,7 @@ The raw weather file reports temperature in *°F* (Fahrenheit), rainfall and sno
 Next, I'll summarize the five numeric predictors, count the missing values in the outcome and all six predictors, and count the records by year and the number of states to see how complete the data is and which years and places it covers.
 
 ```{r summary-stats}
+#| label: 01-summary-stats
 #| warning: true
 
 # Summarize the predictors, count missing values, and count records by year and state
@@ -298,6 +303,7 @@ Only *agency_population* has missing values (*2,897*); the outcome and the other
 Next, I'll count the Black and Not Black victims, find each group's share, and plot the counts as a bar chart to see how balanced the two levels are, since the larger level's share is the accuracy the model has to beat.
 
 ```{r outcome-bar}
+#| label: 01-outcome-bar
 #| warning: false
 
 # Count each outcome level and find its share.
@@ -328,6 +334,7 @@ homicide_outcome_level
 ```
 
 ```{r outcome-bar-plot}
+#| label: 01-outcome-bar-plot
 #| warning: false
 #| fig-width: 12
 #| fig-height: 8
@@ -400,6 +407,7 @@ ggsave(
 Next, I'll compare the five numeric predictors for Black and Not Black victims, using each predictor's median and a box plot for each, to see whether any predictor's values differ between the two groups before the model tests them.
 
 ```{r predictors-by-outcome}
+#| label: 01-predictors-by-outcome
 #| warning: true
 
 # Compare each numeric predictor's median and spread for Black and Not Black victims.
@@ -506,6 +514,7 @@ predictors_long %>%
 ```
 
 ```{r predictors-by-outcome-plot}
+#| label: 01-predictors-by-outcome-plot
 #| warning: false
 #| fig-width: 12
 #| fig-height: 9
@@ -563,6 +572,7 @@ Black victims' records have higher medians than Not Black victims' records for a
 Each record is labeled Within Jurisdiction if the homicide matches an agency with a recorded population, and Surrounding Area if it does not. Next, I'll calculate the share of Black and Not Black victims in each jurisdiction group.
 
 ```{r jurisdiction-by-outcome}
+#| label: 01-jurisdiction-by-outcome
 #| warning: true
 
 # Find and display the victim ratio within each jurisdiction group.
@@ -599,6 +609,7 @@ Within Jurisdiction records are *36.7*% Black, compared with *31.2*% of Surround
 To map the jurisdiction groups, I'll first count records in each county by jurisdiction group and victim race. Then I’ll separate each county's name from its state so I can match it to the county map shapes.
 
 ```{r county-counts}
+#| label: 01-county-counts
 #| warning: false
 
 # Count records by county, jurisdiction group, and victim race, and split each county from its state.
@@ -640,6 +651,7 @@ The counts produce *2,803* rows across *1,794* counties, and their total is *15,
 Next, I’ll download the state and county shapes from the U.S. Census Bureau for 2020, the last year of the data, since later files replace Connecticut’s counties with planning regions. I'll also call `total_rows()` from the utils.R file to count both the state and county shapes.
 
 ```{r county-shapes}
+#| label: 01-county-shapes
 #| warning: false
 
 # Download the 2020 state and county shapes.
@@ -687,6 +699,7 @@ The Census files contain *52* state shapes and *3,221* county shapes, and each c
 Before mapping, I'll create a key for each county shape using its name and state, matching the "County, ST” format used in the counts. I'll use *NAMELSAD* to identify the six cities that share a county's name, such as *Baltimore city*, so they aren't mistaken for counties. Then I'll check which counties in the counts have no matching shape and how many records they contain.
 
 ```{r county-match}
+#| label: 01-county-match
 #| warning: false
 
 # Find the counties with no matching county shape and count them.
@@ -772,6 +785,7 @@ After *NAMELSAD* assigned each of the six cities that share a county's name its 
 Next, I'll join the counts to their county shapes, move Alaska, Hawaii, and Puerto Rico below the lower 48 states, and find each county's center point, where its records will be drawn.
 
 ```{r jurisdiction-map-data}
+#| label: 01-jurisdiction-map-data
 #| warning: true
 
 # Join the counts to the county shapes, shift states, and find county's center point.
@@ -818,6 +832,7 @@ After the join, the map data has *2,803* county rows, the same number as the cou
 Now I'll map the county center points in two panels, one for each jurisdiction group, with each point sized by its number of records and filled by victim race, over the shifted state outlines. 
 
 ```{r jurisdiction-map-plot}
+#| label: 01-jurisdiction-map-plot
 #| warning: false
 #| fig-width: 12
 #| fig-height: 5
@@ -898,6 +913,7 @@ The Surrounding Area panel holds *2,897* records and the Within Jurisdiction pan
 Next, I'll compute Pearson's correlation between each pair of the five numeric predictors to see whether any two predictors move together so closely that the model couldn't separate their effects.
 
 ```{r predictor-correlations}
+#| label: 01-predictor-correlations
 #| warning: true
 
 # Compute Pearson's correlation between each pair of numeric predictors.
@@ -948,6 +964,7 @@ names(correlation_long) <-
 ```
 
 ```{r nonrundant-corr-plot}
+#| label: 01-nonrundant-corr-plot
 #| warning: true
 
 # Create a new table that will be used to plot only half of the correlation heat map.
@@ -981,6 +998,7 @@ filtered_correlation_long %>%
 ```
 
 ```{r predictor-correlations-plot}
+#| label: 01-predictor-correlations-plot
 #| warning: false
 #| fig-width: 12
 #| fig-height: 7
@@ -1058,6 +1076,7 @@ The strongest correlations are between temperature and snowfall (*-0.59*) and be
 Next, I'll calculate the proportions of Black victims and the number of records in each state, and plot the proportions as a sorted horizontal bar chart to see how much the proportions vary by location across the 50 states and the District of Columbia.
 
 ```{r black-share-by-state}
+#| label: 01-black-share-by-state
 #| warning: true
 
 # Find the Black proportion and number of records in each state.
@@ -1106,6 +1125,7 @@ state_ratio %>%
 ```
 
 ```{r black-share-by-state-plot}
+#| label: 01-black-share-by-state-plot
 #| warning: false
 #| fig-width: 12
 #| fig-height: 9
@@ -1170,6 +1190,8 @@ The analysis data is complete except for *2,897* missing agency population value
 List the installed versions of each package and print them out.
 
 ```{r analysis-package-list}
+#| label: 01-analysis-package-list
+
 # Produce the package list for C3 that are included in this file.
 
 #== display package versions ==
@@ -1202,6 +1224,8 @@ sapply(
 ## Session
 
 ```{r exploration-session}
+#| label: 01-exploration-session
+
 # View comprehensive script summary and metadata.
 
 #== enhanced method ==
