@@ -32,6 +32,7 @@ execute:
 This script cleans and matches the raw homicide, law enforcement agency, and weather datasets, then saves the final dataset as two Parquet file. Each step stays in the order it was done, including checks that led to later fixes. But first, I'll load in the required packages.
 
 ```{r load-packages}
+#| label: 00-load-packages
 #| echo: true
 #| output: false
 #| results: hide
@@ -54,6 +55,7 @@ library(sessioninfo)
 The function, `load_raw_data()`, uses `here::here()` to build each file's path from the project folder, `read_csv()` to read it, and `stopifnot()` to stop the run if the row count doesn't match the expected number: 894,636 homicide records, 23,486 agency records, and 89,121 weather records. And it lives in the utils.R file, along with all the other functions, and will be called in with the `source()`.
 
 ```{r load-source}
+#| label: 00-load-source
 #| warning: true
 
 # Source the load_raw_data function.
@@ -69,6 +71,7 @@ source(
 My custom `load_raw_data()` function is run, and `$` pulls each of the three datasets out of the list it returns, so each one can be worked with on its own.
 
 ```{r call-load-data-fx}
+#| label: 00-call-load-data-fx
 #| warning: true
 
 # Load the data into a list.
@@ -88,6 +91,7 @@ Then, after loading the data into the list, *"All raw row counts confirmed"* mes
 This second custom function, `column_list()`, uses the `names()` to list each dataset's column names so the raw columns can be compared before any are renamed. The `source()` will dynamically call in this custom function, too.
 
 ```{r call-col-list-fx}
+#| label: 00-call-col-list-fx
 #| warning: true
 
 # Inspect the column names of each raw dataset.
@@ -113,6 +117,7 @@ Before renaming anything, I'll set up my third custom function, `check_column_co
 Then, `rename()` gives the columns I work with new lowercase names joined by underscores, such as *victim_age* and *agency_population*: 10 in the **homicide DF**, 8 in the **agency DF**, and 6 in the **weather DF**. In the **weather DF**, `select()` with `-c()` also drops the columns I don't need, e.g., the API metadata like *timezone* and *elevation*, along with every column that starts with *daily_units*.
 
 ```{r rename-columns}
+#| label: 00-rename-columns
 #| warning: true
 
 # Rename columns to target schema.
@@ -172,6 +177,7 @@ weather_renamed <- weather_df %>%
 My `check_column_counts()` function is run on the three renamed dataframes to confirm each one's width.
 
 ```{r call-col-count-fx}
+#| label: 00-call-col-count-fx
 #| warning: true
 
 # Check the renamed datasets.
@@ -190,6 +196,7 @@ The **homicide DF** still has 30 columns and the **agency DF** still has 37, so 
 Next, I'll call `column_list()` again, this time on the renamed DFs, to confirm the new names took.
 
 ```{r call-col-list-fx-2}
+#| label: 00-call-col-list-fx-2
 #| warning: true
 
 # Check the new column names to confirm the renaming operation worked.
@@ -211,6 +218,7 @@ My fourth custom function, `three_col_check()`, uses `count()` to tally the valu
 Then, I'll run it on the **homicide DF** to see how victims break down by ethnicity, race, and sex, and to spot any formatting problems in the labels.
 
 ```{r call-col-check-fx-1}
+#| label: 00-call-col-check-fx-1
 #| warning: true
 
 # Count victim ethnicity/race/sex for category breakdown and formatting issues.
@@ -231,6 +239,7 @@ None of the three tables has an NA row, and each one adds up to 894,636 records,
 Now, I'll narrow the **homicide DF** to female victims with a known race, using the `filter()` to keep the "Female" records in *VicSex* and drop the "Unknown" records in *VicRace*. Then, the `mutate()` with the `case_when()` to collapse the three smaller race groups, such as Asian, into one "Other Ethnic" group in *victim_race_collapsed*, and the `if_else()` turns that into a two-group *victim_racial_construct*: Black or Not Black. The result is saved as the **recoded DF**, and the `nrow()` and my custom `three_col_check()` confirm its size and categories.
 
 ```{r victim-race-recode}
+#| label: 00-victim-race-recode
 #| warning: true
 
 # Recode victim race/ethnic into binary constructs.
@@ -276,6 +285,7 @@ The **recoded DF** has 197,147 records. Since the earlier victim counts showed 1
 Before recoding the offender side, I'll use `count()` to see the *OffRace* categories. This count runs on the full **homicide DF** from the renaming step, not the **recoded DF**, so it covers all 894,636 records.
 
 ```{r view-offrace-counts}
+#| label: 00-view-offrace-counts
 #| warning: true
 
 # Count offender race categories to confirm which values need collapsing.
@@ -292,6 +302,7 @@ homicide_renamed %>%
 Then, `mutate()` builds the offender versions the same way, *offender_race_collapsed* and *offender_racial_construct*, but this time `case_when()` keeps "Unknown" as its own group instead of dropping it. As the code comment notes, offender race is only descriptive, so keeping these records avoids shrinking the **recoded DF**.
 
 ```{r offender-race-recode}
+#| label: 00-offender-race-recode
 #| warning: true
 
 # Recode the offender race/ethnic categories into binary constructs.
@@ -336,6 +347,7 @@ In *offender_racial_construct*, 62,643 records are Black, 89,633 are Not Black, 
 Next, I'll turn to *VAL_DATE* in the **agency DF**, the date each agency's record was validated. But first, the `select()` and `head()` show five sample values, and the `class()` checks the column's data type.
 
 ```{r view-geojson-dates}
+#| label: 00-view-geojson-dates
 #| warning: true
 
 # Inspect the current geojson date timestamps and how they're formatted.
@@ -354,6 +366,7 @@ Each *VAL_DATE* value is written as text that starts with a short weekday name a
 Then, the `mutate()` with `parse_date_time()` turns *VAL_DATE* into a real date-time (*val_date_parsed*). Its `orders` argument, "a, d b Y H:M:S", describes the text's layout: weekday, day, month, year, then the time, and the `tz = "GMT"` matches the time zone written in the text. From there, the `wday()` with `label = TRUE` and `abbr = FALSE` pulls the full weekday name into *validated_week_name*, and the `day()` pulls the day of the month into *validated_day*. The result is saved as the **derived DF**, where the `sum()` with `is.na()` counts any dates that failed to parse, and the `count()` shows how the weekdays break down.
 
 ```{r parse-week-name}
+#| label: 00-parse-week-name
 #| warning: true
 
 # Derive validated_week_name and validated_day from VAL_DATE.
@@ -393,6 +406,7 @@ The NA count is 0, so every *VAL_DATE* value parsed. The weekday counts add up t
 To confirm the new columns line up with the original text, the `select()` and `head()` show *VAL_DATE* next to *validated_week_name* and *validated_day* for five records.
 
 ```{r verify-derived-dates}
+#| label: 00-verify-derived-dates
 #| warning: true
 
 # Preview derived date/day-of-week columns to confirm they were extracted.
@@ -412,6 +426,7 @@ In all five rows, *validated_week_name* matches the short weekday at the start o
 Now, back to the **homicide DF**. Before dropping anything, I'll look at a few candidate columns, such as *MSA* and *FileDate*. The `head()` shows samples, `sum` with `is.na` counts missing values, `count` tallies the categories, and the `summary()` describes the numbers in the *Incident* column. These checks run on the full **homicide DF** from the renaming step, and cover all **894,636 records**.
 
 ```{r view-unused-cols}
+#| label: 00-view-unused-cols
 #| warning: true
 
 # Inspect (1st five records, NAs, and value counts) candidate columns before dropping.
@@ -462,6 +477,7 @@ Running the `view-unused-cols` chunk shows that the *MSA* column has no NA value
 To check whether *MSA* can be rebuilt from other columns, `mutate` with `paste0` joins the *Agency* and *State* columns with a comma and a space into *msa_reconstructed*, and the `filter()` with `nrow` counts the records where it doesn't match the *MSA* column.
 
 ```{r validate-msa-column}
+#| label: 00-validate-msa-column
 #| warning: true
 
 # Reconstruct the metropolitan area categories from the city and state columns, then count rows.
@@ -487,6 +503,7 @@ The count is **894,636**, every record in the **homicide DF**, so the rebuilt ve
 Then, I'll compare just the city part. The `sub()` with the pattern `",.*"` removes the comma and everything after it from *MSA*, leaving only the city in *msa_city_only*, and the `filter()` with `nrow` counts the records where that city doesn't match *Agency*.
 
 ```{r validate-msa-city}
+#| label: 00-validate-msa-city
 #| warning: true
 
 # Extract the city name from the metropolitan area string and verify that it matches the agency name for every record.
@@ -512,6 +529,7 @@ The output shows that **747,806** records don't match, which leaves only 146,830
 With those checks done, the `select()` with a minus sign in front of each name drops four columns from the **recoded DF**: *Subcircum*, *FileDate*, *ActionType*, and *MSA*. These columns were ruled out for the analysis, while *Situation* and *Incident* stay in. Then, `ncol` confirms the new width.
 
 ```{r drop-homicide-cols}
+#| label: 00-drop-homicide-cols
 #| warning: true
 
 # Drop columns ruled out for analysis, explicitly and documented.
@@ -534,6 +552,7 @@ The **recoded DF** now has **30** columns: the 30 from the renaming step, plus t
 Last, `count` tallies *Agentype* in the **recoded DF**, and `sum` with `is.na` checks it for missing values. Later stages match each agency type to the **agency DF** in its own way, so I want to confirm the types after filtering and recoding.
 
 ```{r recount-recoded-type}
+#| label: 00-recount-recoded-type
 #| warning: true
 
 # Confirm Agentype categories on the filtered/recoded data.
@@ -559,6 +578,7 @@ The **recoded DF** has **8** agency types, and they add up to **197,147** record
 Next, I'll check the state names in the **recoded DF**. But first, `count` and `head` show the first five values in *State* and how many records each one has.
 
 ```{r view-homi-state-count}
+#| label: 00-view-homi-state-count
 #| warning: true
 
 # Count first five state records.
@@ -576,6 +596,7 @@ homicide_recoded %>%
 Then, `setdiff()` compares the `unique()` values in *State* against `state.name`, R's built-in list of the 50 state names, and returns any value that isn't on that list.
 
 ```{r compare-state-vals}
+#| label: 00-compare-state-vals
 #| warning: true
 
 # Identify any state values that do not match built-in states list.
@@ -595,6 +616,7 @@ Two values aren't on the list: *"District of Columbia"* and *"Rhodes Island."* T
 To see how many records the typo affects, `filter` keeps the "Rhodes Island" records and the `nrow()` counts them.
 
 ```{r homi-rhode-island}
+#| label: 00-homi-rhode-island
 #| warning: true
 
 # Filter for the "Rhodes Island" typo and tally them.
@@ -612,6 +634,8 @@ This output shows that 420 records are spelled "Rhodes Island," so the next step
 Now, I'll build a lookup table with the `tibble()`. Its *state_name* column lists the 50 names in `state.name`, plus *"District of Columbia"* and *"Rhodes Island,"* and its *state_abb* column lists the matching abbreviations from `state.abb`, plus *"DC"* and *"RI,"* so the typo gets Rhode Island's abbreviation too. Then, the `left_join()` matches *State* to *state_name*, adding *state_abb* to the **recoded DF**, and `sum` with `is.na` counts any records that didn't get an abbreviation.
 
 ```{r add-state-abbrv}
+#| label: 00-add-state-abbrv
+
 # Lookup state names and check if every record matched.
 
 #== create state abbreviation lookup ==
@@ -649,6 +673,8 @@ The NA count is 0, so every record in the **recoded DF** found a match in the lo
 With every record matched, `select` with a minus sign drops the full-name *State* column, and `rename` changes *state_abb* to *state*, so it follows the same lowercase style as the other renamed columns. Then, the `names()` lists the columns, and `count` with `nrow` counts the distinct states.
 
 ```{r replace-state-name}
+#| label: 00-replace-state-name
+
 # Replace full state name with abbreviations and drop the newly redundant values.
 
 #== rename state names ==
@@ -673,6 +699,7 @@ The **recoded DF** still has 30 columns because *state_abb* was added and *State
 Now, I'll join the agency details to the homicide records one agency type at a time, starting with municipal police, the largest group. The `filter()` keeps the *"Municipal police"* records from the **recoded DF**, and the `rename()` changes *Agency* to *city*, saving them as the **municipal DF** (`homicide_municipal`). Then, a second `filter()` keeps the *"LOCAL POLICE DEPARTMENT"* rows from the **derived DF** as the **local agency DF** (`geojson_municipal`), and the `left_join()` matches the two on city and state since municipal police departments are named after the city they serve, saving the **joined DF** (`municipal_joined`). The `nrow()` counts compare the rows before and after the join, and `sum` with `is.na` divided by `nrow` gives the share of records with no *agency_name*.
 
 ```{r municipal-subset}
+#| label: 00-municipal-subset
 #| warning: true
 
 #== Municipal police subset join ==
@@ -719,6 +746,7 @@ The **municipal DF** has *141,096* records, and the **joined DF** has *141,096*,
 But first, before trying again, I'll look at how each side writes its locations. The `select()` with `head()` shows the first five *city* and *state* values from the **municipal DF** and the first five *agency_city* and *agency_state* values from the **local agency DF**.
 
 ```{r view-municipal-locale}
+#| label: 00-view-municipal-locale
 #| warning: true
 
 # Compare municipal city and state formatting and alignment.
@@ -745,6 +773,8 @@ The homicide cities are in title case, like *"Anchorage"*, while the agency citi
 Then, I'll rebuild both subsets with a matching column made just for the join. The `mutate()` with `toupper()` and `trimws()` changes each city name to capital letters and trims any extra spaces, adding *city_match* to the **municipal DF** and *agency_city_match* to the **local agency DF**. The `left_join()` now matches on those columns plus the state, followed by the same row counts and NA proportion.
 
 ```{r standardize-strings}
+#| label: 00-standardize-strings
+
 # Join and case-normalize the municipal police subset.
 
 #== homicide subset: municipal police only, city standardized to uppercase for matching ==
@@ -801,6 +831,7 @@ The NA proportion dropped to *0.00897856*, or about 0.9%, so the matching column
 To find where the extra rows come from, the `count()` tallies the rows for each *agency_city_match* and *agency_state* pair in the **local agency DF**. Then, `filter` keeps the pairs with more than one row, and `arrange` with `desc` puts the largest first.
 
 ```{r view-city-dups}
+#| label: 00-view-city-dups
 #| warning: true
 
 # Investigate city and state pairs with multiple records and duplicates.
@@ -820,6 +851,7 @@ The output shows that *1,406* city and state pairs have more than one local poli
 Since New York has the most rows, I'll look at them directly. The `filter()` keeps New York's rows, and the `select()` shows each agency's name, type, sworn officers, and population, with `print(n = 49)` showing all 49 of them.
 
 ```{r inspect-nyc-agencies}
+#| label: 00-inspect-nyc-agencies
 #| warning: true
 
 #== look at the actual agency names behind the biggest offender ==
@@ -844,6 +876,7 @@ Only the **headquarters** row has real values (**36,023** sworn officers and a p
 But first, I'll count how often -999 shows up. The `sum()` with `== -999` counts the placeholders in *agency_population* and *ft_sworn* across the whole **derived DF**, and `na.rm = TRUE` skips any values that are already NA.
 
 ```{r geojson-placeholder}
+#| label: 00-geojson-placeholder
 #| warning: true
 
 # Count -999 records (placeholder) in agency population/sworn officer for numerical NaN.
@@ -860,6 +893,7 @@ The results came back with *agency_population* having *7,462* -999 values, and *
 Then, to see whether -999 shows up beyond those two columns, `select` with `where(is.numeric)` keeps every numeric column in the **renamed DF**, and `summarise` with `across` counts the -999 values in each one. And I'll use `print(width = Inf)` to view all 17 columns.
 
 ```{r scan-placeholders}
+#| label: 00-scan-placeholders
 #| warning: true
 
 # Scan all columns at once, count the times -999 appears.
@@ -885,6 +919,7 @@ So, the -999 shows up in 12 of the 17 numeric columns, from *7,327* (e.g., *ft_s
 Now, the `mutate()` with `across` and `na_if` swaps every -999 value in the numeric columns of the **renamed DF** for a true NA. The same scan runs again to confirm none are left, and the `sum()` with `is.na` counts the NAs in *agency_population*.
 
 ```{r recode-sentinel-vals}
+#| label: 00-recode-sentinel-vals
 #| warning: true
 
 # Recode -999 sentinel to true NA across all numeric column in the geojson data.
@@ -925,6 +960,7 @@ Now every column shows *0*, and *agency_population* has *7,462* NAs, the same as
 Then, to see which agencies are missing their population, `filter` with `is.na` keeps those rows in the **renamed DF**, and `count` with `arrange(desc())` tallies them by *agency_type*.
 
 ```{r agency-drilltip}
+#| label: 00-agency-drilltip
 #| warning: true
 
 # Investigate which agency types drive the agency_population NA count.
@@ -943,6 +979,7 @@ The *7,462* missing populations span five agency types, led by *"LOCAL POLICE DE
 Since the **derived DF** was built from the **renamed DF** before this fix, it still holds the -999 values. So, I'll rebuild it from the corrected **renamed DF** with the same `parse_date_time()`, `wday()`, and the `day()` steps, then the `sum()` with `is.na` will check that every date parsed.
 
 ```{r rebuild-geojson}
+#| label: 00-rebuild-geojson
 #| warning: true
 
 # Rebuild geojson_derived on the corrected geojson_renamed dataset.
@@ -979,6 +1016,7 @@ Here the results show that the NA count is *0*, so every date parsed again, and 
 With the placeholders fixed, I'll rebuild the **local agency DF** from the new **derived DF** with the same `filter()` and the `mutate()` with `toupper()` and `trimws()`, then rerun with a `left_join`. This time, the NA proportion checks *agency_population* instead of *agency_name*, since the -999 rows had a name but no population, so *agency_name* hid how much was really missing.
 
 ```{r redo-municipal-subset}
+#| label: 00-redo-municipal-subset
 #| warning: true
 
 # Re-run the municipal police subset and join with the corrected geojson data.
@@ -1024,6 +1062,7 @@ Here, the **joined DF** still has **1,348,880** rows with the same many-to-many 
 Next, I'll check whether the duplicates are only the rows without a population. The `filter()` with `!is.na` drops those rows from the **local agency DF**, and the same `count()`, `filter()`, and `arrange()` list the pairs that still show up more than once.
 
 ```{r remove-missing-pop}
+#| label: 00-remove-missing-pop
 #| warning: true
 
 # Remove NA-population agency rows and compare to city and state duplication.
@@ -1046,6 +1085,7 @@ The *528* pairs still have more than one row, down from *1,406*. New York is no 
 To see whether Pittsburgh's rows are separate departments or a data error, the `filter()` keeps Pittsburgh's rows that have a population, and the `select()` with `print(n = 29)` shows all of them.
 
 ```{r inspect-rows}
+#| label: 00-inspect-rows
 #| warning: true
 
 # Confirm distinct departments and data error for Pittsburgh.
@@ -1071,6 +1111,7 @@ The 29 rows are separate borough and township police departments that share Pitt
 Since the join only matches on city and state, it can't tell these departments apart, so I'll keep one row per pair. The `filter()` drops the rows without a population, `group_by` groups by *agency_city_match* and *agency_state*, and the `slice_max()` keeps the row with the largest *agency_population* since it's most likely the main police department for that city, like Pittsburgh's Bureau of Police. With the `with_ties = FALSE` set, it keeps only one row if two are tied, and the `ungroup()` removes the grouping, saving the **deduplicated DF** (`geojson_municipal_dedup`). Then, the `nrow()` counts its rows, and `count` with `filter` and `nrow` checks that no pair shows up twice.
 
 ```{r pop-agency-match}
+#| label: 00-pop-agency-match
 #| warning: true
 
 # Deduplicate geojson_municipal to 1(row)/city+state and keep the largest-population.
@@ -1110,6 +1151,7 @@ The **deduplicated DF** has **10,867** rows, and the duplicate check is **0**, s
 Finally, the `left_join()` matches the **municipal DF** to the **deduplicated DF** on *city_match* and *state*, followed by the same row-count and *agency_population* NA proportion checks.
 
 ```{r final-municipal-join}
+#| label: 00-final-municipal-join
 #| warning: true
 
 # Deduplicated agency and municipal police subset join.
@@ -1147,6 +1189,7 @@ The **municipal DF** has **141,096** records, and the **joined DF** has **141,09
 Next up are the sheriff records. This join needs a county name on both sides since a sheriff's office serves a whole county rather than a single city. But first, I'll look at how each side stores its counties. The `distinct()` with `slice_sample(n = 15)` pulls 15 random values from the **homicide DF**'s *CNTYFIPS* column and from the **agency DF**'s *COUNTY* and *COUNTYFIPS* columns. Since there's no `set.seed()`, the sample changes each time the script runs.
 
 ```{r county-fips-sample}
+#| label: 00-county-fips-sample
 #| warning: true
 
 # Sample real county-related values from both the homicide and geojson datasets.
@@ -1181,6 +1224,7 @@ geojson_df %>%
 Then, I'll count two values since Puerto Rico shows up in the agency file, and *"Ste. Genevieve"* has a period that could get in the way of the split or the match. The `filter()` with `grepl()` counts the **homicide DF** records whose *CNTYFIPS* includes *", PR"* (Puerto Rico) and those that include "GENEVIEVE," with `ignore.case = TRUE` catching it in upper or lower case. A last `filter()` counts the **agency DF** rows where *STATE* is *"PR."*
 
 ```{r pr-genevieve}
+#| label: 00-pr-genevieve
 #| warning: true
 
 # Filter and count the amount of "PR" Puerto Rican and "STE. GENEVIEVE" category values.
@@ -1221,6 +1265,7 @@ The **homicide DF** has *0* Puerto Rico records and *35* Ste. Genevieve records,
 To see how the Ste. Genevieve records are written, the same `filter()` with `distinct()` lists each unique *CNTYFIPS* value, and `print(n = 15)` shows up to 15 of them.
 
 ```{r distinct-genevieve}
+#| label: 00-distinct-genevieve
 #| warning: true
 
 # Inspect the "GENEVIEVE" values found in the homicide data and its other associations.
@@ -1246,6 +1291,7 @@ All 35 records share one value, *"Ste. Genevieve, MO,"* so it's written the same
 Now, I'll split *CNTYFIPS* into its two parts. The `separate_wider_delim()` splits each value at the comma and space into *county_agency* and *county_state*, with `too_few = "align_start"` filling in an NA when a value has no comma instead of stopping, and `cols_remove = FALSE` keeping the original *CNTYFIPS*. Then, `mutate()` with `toupper()` and `trimws()` changes *county_agency* to capital letters with no extra spaces, saving it all as the **subset DF** (`homicide_subset`), built from the whole **recoded DF** rather than only the sheriff records. A last `filter()` with `distinct()` checks how Ste. Genevieve came through.
 
 ```{r split-county-fips}
+#| label: 00-split-county-fips
 #| warning: true
 
 # Parsing columns for a join key (sheriff-type).
@@ -1291,6 +1337,7 @@ homicide_subset %>%
 Then, on the agency side, `rename()` changes *COUNTY* to *agency_county* and *COUNTYFIPS* to *agency_county_fips* in the **derived DF**, so they follow the same lowercase style as the other renamed columns, and `mutate()` with `toupper()` and `trimws()` makes sure *agency_county* is in capital letters with no extra spaces. The `select()` with `head(8)` shows the first eight rows.
 
 ```{r geo-county-rename}
+#| label: 00-geo-county-rename
 #| warning: true
 
 # Rename geojson's county (COUNTY/COUNTYFIPS) columns for the sheriff-type join key.
@@ -1324,6 +1371,7 @@ Both columns kept their values, with county names in capital letters, like *"PAU
 Now, `filter()` keeps the *"Sheriff"* records from the **subset DF** as the **sheriff DF** (`homicide_sheriff`) and the *"SHERIFF'S OFFICE"* rows from the **derived DF** as the **sheriff agency DF** (`geojson_sheriff`), and `nrow()` counts each one.
 
 ```{r sheriff-subset}
+#| label: 00-sheriff-subset
 #| warning: true
 
 # Filter both datasets for the sheriff-type agencies.
@@ -1353,6 +1401,7 @@ The **sheriff DF** has *41,860* records, and the **sheriff agency DF** has *3,83
 Then, the `left_join()` matches *county_agency* and *county_state* to *agency_county* and *agency_state*, saving the **sheriff joined DF** (`sheriff_joined`), followed by the row counts and the *agency_population* NA proportion.
 
 ```{r sheriff-join}
+#| label: 00-sheriff-join
 #| warning: true
 
 # Join homicide_/geojson_sheriff datasets.
@@ -1386,6 +1435,7 @@ The **sheriff joined DF** grew from *41,860* to *157,101* rows, 115,241 more, wi
 To find out why, the `count()` with `filter` and the `arrange(desc())` lists the county and state pairs that show up more than once in the **sheriff agency DF**. Then, `distinct()` with `rename()` builds a one-column list of county names from each side, and `setdiff()` lists the homicide county names that don't appear on the agency side.
 
 ```{r sheriff-diagnostics}
+#| label: 00-sheriff-diagnostics
 #| warning: true
 
 # Check geojson_/homicide_sheriff datasets for "county" references in specific columns.
@@ -1428,6 +1478,7 @@ setdiff(
 Next, I'll save the `setdiff()` result as `county_mismatch` so later chunks can use it. The `filter()` with `select()` and `print(n = 30)` shows all 30 Hillsborough rows, and a `filter()` with `%in%` and `nrow()` counts the **sheriff DF** records that have one of the mismatched county names.
 
 ```{r sheriff-diagnostics-2}
+#| label: 00-sheriff-diagnostics-2
 #| warning: true
 
 # Check if duplicates are NA-heavy or disticnt agencies, the amount of mismatches by row.
@@ -1466,6 +1517,7 @@ Only the District 1 headquarters row has real values (*1,223* sworn officers and
 Since 250 records seemed too few to explain the NA proportion, the `filter()` keeps the **sheriff joined DF** rows that have no population and aren't one of the mismatched counties, and `nrow()` counts them.
 
 ```{r remaining-missingness}
+#| label: 00-remaining-missingness
 #| warning: true
 
 # Check the remaining NA rates that the mismatches don't explain.
@@ -1486,6 +1538,7 @@ sheriff_joined %>%
 Then, back to the 10 mismatched names. The `filter()` with `%in%` and `distinct()` pairs each one with its state in the **sheriff DF**. Since three of them are in Hawaii, `count()` tallies the **derived DF**'s Hawaii rows by *agency_type*, and `distinct()` lists the county names of Hawaii's sheriff's offices.
 
 ```{r remaining-mismatches}
+#| label: 00-remaining-mismatches
 #| warning: true
 
 # Find each county's remaining mismatched state, and compare to the geojson dataset.
@@ -1532,6 +1585,7 @@ The 10 names make *12* county and state pairs, since *"DE KALB"* shows up in Ala
 Then, for the Tennessee and Virginia names, the `filter()` looks for *"HAWKINS,"* *"ALBEMARLE,"* and *"JAMES CITY"* among those states' sheriff's offices, and `distinct()` lists any it finds.
 
 ```{r remaining-sheriff-types}
+#| label: 00-remaining-sheriff-types
 #| warning: true
 
 # Check the other Sheriff-type county names for Tenneessee and Virgina.
@@ -1565,6 +1619,7 @@ The result has *0* rows, so there's no sheriff's office row under these names in
 That leaves four names that are written differently on each side. The `tribble()` builds a lookup table (`county_lookup`) pairing each homicide spelling in *county_agency* with the agency side's spelling in *county_corrected*, such as *"DE KALB"* to *"DEKALB"* and *"DONA ANA"* to *"DOÑA ANA."* Then, `left_join()` adds *county_corrected* to the **subset DF**, `mutate()` with `coalesce()` uses the corrected name where there is one and keeps the original everywhere else, and `select()` with a minus sign drops *county_corrected*. The `print(n = 25)` shows the first 25 rows.
 
 ```{r county-lookup}
+#| label: 00-county-lookup
 #| warning: true
 
 # Create a lookup table to compare column content row-by-row, apply corrections, and join to homicide.
@@ -1603,6 +1658,7 @@ The **subset DF** still has *197,147* records and *32* columns, the 30 from befo
 Since the **sheriff DF** was built before the fix, the same `filter()` rebuilds it from the corrected **subset DF**, and `nrow` counts its records.
 
 ```{r rebuild-homicide-sheriff}
+#| label: 00-rebuild-homicide-sheriff
 #| warning: true
 
 # Update the homicide_sheriff subset with the updated data from the homicide_subset data.
@@ -1622,6 +1678,7 @@ It still has *41,860* records, since the fix only changed spellings.
 Finally, I'll deduplicate the **sheriff agency DF** the same way as the municipal records. The `filter()` drops the rows without a population, `group_by()` groups by *agency_county* and *agency_state*, and `slice_max()` keeps the row with the largest *agency_population*, with `with_ties = FALSE` and the `ungroup()`, saving the **sheriff deduplicated DF** (`geo_sheriff_dedup`). Then, the `count()` with `filter` and `nrow` checks for duplicates, and the `left_join()` reruns the join, followed by the row counts and NA proportion.
 
 ```{r sheriff-join-2}
+#| label: 00-sheriff-join-2
 #| warning: true
 
 # Deduplicate and join the geojson_sheriff dataset on 1 row/county+state.
@@ -1689,6 +1746,7 @@ The duplicate check is *0*, and the **sheriff DF** has *41,860* records while th
 Next up are the primary state law enforcement (LE) records, which I'll match by city and state the same way as the municipal police. The `filter()` keeps the *"Primary state LE"* records from the **subset DF**, `rename` changes *Agency* to *city*, and `mutate` with `toupper` and `trimws` adds *city_match*, a copy of *city* in capital letters with no extra spaces, so the case difference found in the municipal join doesn't get in the way. That's saved as the **state police DF** (`homicide_state_le`). Then, a second `filter` keeps the *"PRIMARY STATE AGENCY"* rows from the **derived DF**, and the same `mutate()` adds *agency_city_match* from *agency_city*, saving them as the **state agency DF** (`geojson_state_le`). Lastly, the `nrow()` counts each one.
 
 ```{r state-le-subset}
+#| label: 00-state-le-subset
 #| warning: true
 
 # Filter both datasets for the primary state LE-type agencies.
@@ -1733,6 +1791,7 @@ From the output shows the **state police DF** has *7,081* records, and the **sta
 Then, the `left_join()` matches *city_match* and *state* to *agency_city_match* and *agency_state*, saving the **state joined DF** (`state_le_joined`), followed by the row counts and the *agency_population* NA proportion.
 
 ```{r le-state-join}
+#| label: 00-le-state-join
 #| warning: true
 
 # Join homicide_/geojson_state_le datasets on city + state.
@@ -1768,6 +1827,7 @@ The **state joined DF** has *7,081* records, the same as the **state police DF**
 Next, the special police records go through the same steps. The `filter()` keeps the *"Special police"* records from the **subset DF**, with the same `rename()` and `mutate` as before, saving them as the **special police DF** (`homicide_special`). A second `filter()` keeps the *"SPECIAL JURISDICTION"* rows from the **derived DF** with the same `mutate()`, saving them as the **special agency DF** (`geojson_special`), and the `nrow()` counts each one.
 
 ```{r hom-geo-subsets}
+#| 00-hom-geo-subsets
 #| warning: true
 
 # Filter both datasets for the special police-type agencies.
@@ -1810,6 +1870,7 @@ The **special police DF** has *450* records, and the **special agency DF** has *
 Then, the `left_join()` matches the two on city and state the same way, saving the **special joined DF** (`special_joined`), followed by the row counts and the NA proportion.
 
 ```{r special-subsets-join}
+#| label: 00-special-subsets-join
 #| warning: true
 
 # Join homicide_/geojson_special datasets on city + state.
@@ -1843,6 +1904,7 @@ The **special joined DF** grew from *450* to *547* rows, 97 more, with a many-to
 Then, I'll deduplicate the **special agency DF** the same way as the sheriff records. The `filter()` drops the rows without a population, `group_by` groups by *agency_city_match* and *agency_state*, and the `slice_max()` keeps the row with the largest *agency_population*, with `with_ties = FALSE` and `ungroup`, saving the **special deduplicated DF** (`geo_special_dedup`). Then, the `count()` with `filter` and `nrow` checks for duplicates, and the `left_join()` reruns the join, saving over the **special joined DF**, followed by the row counts and NA proportion.
 
 ```{r special-police-join}
+#| label: 00-special-police-join
 #| warning: true
 
 # Deduplicate and join the geojson_special dataset on 1 row/city+state.
@@ -1908,6 +1970,7 @@ The duplicate check is *0*, the **special police DF** has **450** records, and t
 Now, back to the state police records, since none of them got a population. The `sum()` with the `!is.na()` counts the **state joined DF** rows that matched an *agency_name*. Then, `distinct` with `nrow` counts the unique values in *city_match* and in *agency_city_match*, and the `unique()` with `%in%` and `sum` counts how many homicide values show up anywhere in *agency_city_match*, no matter the state.
 
 ```{r special-join-diagnostics}
+#| label: 00-special-join-diagnostics
 #| warning: true
 
 # Check the primary state LE join and state subsets for real matches.
@@ -1947,6 +2010,7 @@ Here the results show that *0* rows matched an agency name. The **state police D
 To see why, the `distinct()` with `slice_sample(n = 15)` pulls 15 random values from *city* in the **state police DF** and from *agency_city* in the **state agency DF**. Since there's no `set.seed()`, the sample changes each time the script runs.
 
 ```{r special-join-diagnostics-2}
+#| label: 00-special-join-diagnostics-2
 #| warning: true
 
 # Compare the real city values to cities that overlap.
@@ -1977,6 +2041,7 @@ Interestingly, *city* holds the names of state police units, like county units, 
 Next up are the county police records. The `filter()` keeps the *"County police"* records from the **subset DF**, with the same `rename()` and `mutate()` as the state and special police, saving them as the **county police DF** (`homicide_county_police`), and `nrow()` counts them.
 
 ```{r county-police-subset}
+#| label: 00-county-police-subset
 #| warning: true
 
 # Filter the homicide dataset for the county police-type agencies.
@@ -2005,6 +2070,7 @@ The **county police DF** has *6,237* records.
 But first, I'll check whether *city* actually holds city names here. The `distinct()` with `slice_sample(n = 15)` pulls 15 random values from *city* in the **county police DF** and from *agency_city* in the **deduplicated DF** from the municipal join. Since there's no `set.seed()`, the sample changes each time the script runs.
 
 ```{r county-police-sample}
+#| label: 00-county-police-sample
 #| warning: true
 
 # Check the city values are also in Agency.
@@ -2031,6 +2097,7 @@ geojson_municipal_dedup %>%
 Then, `mutate` with `toupper` and `trimws` adds *name_match* to the **county police DF**, and the same `mutate` adds *agency_name_match* from *agency_name* to the **derived DF**, saving it as the **agency name DF** (`geojson_name_check`), with every agency type kept. The `unique()` with `%in%` and `sum` counts how many department names show up exactly in *agency_name_match*, and the `distinct()` with `nrow()` counts the total number of department names.
 
 ```{r county-police-name-check}
+#| label: 00-county-police-name-check
 #| warning: true
 
 # Check county police department names match geojson agency_name instead of city.
@@ -2074,6 +2141,7 @@ Only *17* of the *47* department names match exactly, so 30 are still unmatched.
 To see why, the `filter()` with `!` and `%in%` lists the department names with no exact match, and `print(n = 30)` shows up to 30 names. Then, `filter` with the `grepl()` lists the distinct names in the **agency name DF** that are filed as *"LOCAL POLICE DEPARTMENT"* and include *"COUNTY,"* and `print(n = 30)` shows the first 30.
 
 ```{r county-police-name-diagnostics}
+#| label: 00-county-police-name-diagnostics
 #| warning: true
 
 # Compare department names to geojson county-related agency names.
@@ -2109,6 +2177,7 @@ All *30* unmatched names print, and the agency side has *358* local police names
 Then, I'll strip those extra words. The `mutate()` adds *agency_name_base* to the **agency name DF**, where the first `sub()` with a regular expression (regex) pattern `" - .*$"` removes everything from the first dash with spaces around it to the end of the name, and the second `sub()` with `" HEADQUARTERS$"` removes *"HEADQUARTERS"* only when it's at the end, since `$` marks the end of the name. The same `unique()` with `%in%` and `sum()` counts the matches again, now against *agency_name_base*.
 
 ```{r county-police-name-normalize}
+#| label: 00-county-police-name-normalize
 #| warning: true
 
 # Strip trailing qualifiers after the first " - " from geojson agency names.
@@ -2145,6 +2214,7 @@ sum(
 The same `filter()` with `!` and `%in%`, now against *agency_name_base*, lists the names that are still unmatched, and `print(n = 20)` shows up to 20.
 
 ```{r county-police-name-normalize-diagnostics}
+#| label: 00-county-police-name-normalize-diagnostics
 #| warning: true
 
 # List department names still unmatched after stripping geojson suffixes.
@@ -2167,6 +2237,7 @@ The *17* names left are a mix: some are shortened or written another way, like *
 Next, I'll search for the 17 names by a shorter root, such as *"MIAMI-DADE"* or *"HENRICO,"* in case the agency side words them differently, and save the 17 roots as `unmatched_roots`. The `paste()` with `collapse = "|"` joins them into one search pattern, where `|` means "or," and the `filter()` with `grepl` keeps every *agency_name_base* that contains any of them. The `distinct()` with `print(n = 40)` shows the first 40.
 
 ```{r county-police-name-remaining-check}
+#| label: 00-county-police-name-remaining-check
 #| warning: true
 
 # Search roots for name variants pulled from the 17 unmatched departments.
@@ -2215,6 +2286,7 @@ The search found *158* distinct names, too many to check by eye, since short roo
 So, the same search adds *"LOCAL POLICE DEPARTMENT"* to the `filter()`, since that's where the county police names were filed, and `print(n = 40)` shows the first 40.
 
 ```{r county-police-name-remaining-narrow}
+#| label: 00-county-police-name-remaining-narrow
 #| warning: true
 
 # Search root names against "LOCAL POLICE DEPARTMENT" only.
@@ -2243,6 +2315,7 @@ That cut the list to *82* names, but it still has town, township, and city depar
 The `filter()` with `!` and `%in%` keeps the **county police DF** records that are still unmatched, and the `distinct()` pairs each name with its state, saving the **unmatched DF** (`unmatched_bystate`).
 
 ```{r county-police-name-remaining-bystate}
+#| label: 00-county-police-name-remaining-bystate
 #| warning: true
 
 # Pair unmatched names with state.
@@ -2266,6 +2339,7 @@ The **unmatched DF** has *17* rows, one for each name, so each unmatched name co
 Then, the same local police search adds `agency_state %in% unmatched_bystate$state` to the `filter()`, so it only keeps names from those states. The `distinct()` lists each state and name pair, `arrange` sorts them by state, and `print(n = 59)` shows all of them.
 
 ```{r county-police-name-remaining-bystate-check}
+#| label: 00-county-police-name-remaining-bystate-check
 #| warning: true
 
 # Check roots against geojson against its relevant states.
@@ -2299,6 +2373,7 @@ The list has *59* state and name pairs. Comparing each pair to its homicide name
 Since some likely matches show up under more than one version of their name, the `filter()` keeps those names in Alaska, Florida, Georgia, and Maryland, and the `distinct()` with `arrange` lists each name with its *agency_population*, sorted by state and name with the largest population first, and `print(n = 40)` shows all of them.
 
 ```{r county-police-remaining-candidates}
+#| label: 00-county-police-remaining-candidates
 #| warning: true
 
 # View population per candidate.
@@ -2339,6 +2414,7 @@ The *28* rows show that each likely match has one version with a population and 
 Then, the same steps list the last three likely matches in Alaska, New York, and Virginia, with `print(n = 20)`.
 
 ```{r county-police-remaining-candidates-2}
+#| label: 00-county-police-remaining-candidates-2
 #| warning: true
 
 # View population for the remaining unverified candidates.
@@ -2380,6 +2456,7 @@ The *6* rows give Bristol Bay a population of *9* and Westchester's *"DEPARTMENT
 Now, the `tribble()` builds a lookup table (`county_police_lookup`) pairing the homicide names in *name_match* with the agency side's spelling in *name_corrected*, such as *"MIAMI-DADE"* to *"MIAMI-DADE COUNTY POLICE DEPARTMENT"* and *"PRINCE GEORGE'S COUNTY POLICE DEPARTMENT"* to *"PRINCE GEORGES COUNTY POLICE."*
 
 ```{r county-police-lookup}
+#| label: 00-county-police-lookup
 #| warning: true
 
 # Build lookup table to map to the homicide department names.
@@ -2402,6 +2479,7 @@ county_police_lookup <- tibble::tribble(
 Then, `left_join` adds *name_corrected* to the **county police DF**, `mutate` with `coalesce` uses the corrected name where there is one and keeps the original everywhere else, and the `select()` with a minus sign drops *name_corrected*. On the agency side, the `filter()` drops the rows without a population, and `group_by` with `slice_max` keeps the row with the largest *agency_population* for each *agency_name_base*, with `with_ties = FALSE`, then the `ungroup()`, saving the **county police deduplicated DF** (`geo_county_police_dedup`).
 
 ```{r county-police-apply-lookup}
+#| label: 00-county-police-apply-lookup
 #| warning: true
 
 # Apply lookup, then join deduplicated population by exact name match.
@@ -2445,6 +2523,7 @@ geo_county_police_dedup <- geojson_name_check %>%
 Lastly, the `left_join()` adds *agency_population* from the **county police deduplicated DF** by matching *name_match* to *agency_name_base*, saving over the **county police DF**. The `nrow()` checks that the row count held, and `mean` with `is.na` gives the NA proportion, which works the same as dividing the `sum()` by `nrow`.
 
 ```{r county-police-join}
+#| label: 00-county-police-join
 #| warning: true
 
 # Join deduplicated population onto homicide by name.
@@ -2484,6 +2563,7 @@ The **county police DF** still has *6,237* records, so the join didn't add any r
 The last three agency types, *"Tribal,"* *"Regional police,"* and *"Primary federal LE,"* don't get a join at all. The `filter()` with `%in%` keeps their records from the **subset DF**, with the same `rename()` and `mutate()` as before, and the `mutate()` also adds *agency_population* as `NA_real_`, a numeric NA, so these records have the same columns as the other groups when they're all combined. That's saved as the **no-match DF** (`homicide_no_match`), and `nrow()` counts the records.
 
 ```{r no-match-agentypes}
+#| label: 00-no-match-agentypes
 #| warning: true
 
 # Create a subset of the no-match Agentypes, and retain their NA values.
@@ -2522,6 +2602,7 @@ The **no-match DF** has *423* records, and every one of them has an NA *agency_p
 Before combining, each group needs its location in one column with the same name. The `rename()` changes *city* to *location_match* in the **joined DF**, the **state joined DF**, the **special joined DF**, the **county police DF**, and the **no-match DF**, and it changes *county_agency* to *location_match* in the **sheriff joined DF**, since the sheriff records were matched by county instead of city.
 
 ```{r pipeline-location-rename}
+#| label: 00-pipeline-location-rename
 #| warning: true
 
 # Rename location column to one shared name.
@@ -2561,6 +2642,7 @@ homicide_no_match <- homicide_no_match %>%
 Then, the `Reduce()` with `intersect` compares the `names()` of all six groups two at a time, so only the column names found in every group are left, saving them as `common_cols`. The `bind_rows()` stacks the six groups into one, with `select` and `all_of(common_cols)` keeping only the shared columns from each, saving the **final DF** (`homicide_final`), and `nrow()` counts the records.
 
 ```{r pipeline-reassembly}
+#| label: 00-pipeline-reassembly
 #| warning: true
 
 # Keep the common columns of the six subsets, then combine them.
@@ -2622,6 +2704,7 @@ The **final DF** has **197,147** records, the same as the **subset DF**, so ever
 To double-check, printing `common_cols` lists the shared column names, and adding up the `nrow()` of all six groups gives the expected total.
 
 ```{r pipeline-reassembly-check}
+#| label: 00-pipeline-reassembly-check
 #| warning: true
 
 # Confirm agency_population survived, and totals reconcile.
@@ -2643,6 +2726,7 @@ There are 30 shared columns, including *location_match* and *agency_population*,
 Lastly, the `mean()` with `is.na` gives the NA proportion of *location_match*.
 
 ```{r pipeline-location-check}
+#| label: 00-pipeline-location-check
 #| warning: true
 
 # Check the NA rates in the homicide_final subset.
@@ -2664,6 +2748,7 @@ The NA proportion is *0*, so every record has a location after the rename.
 The **final DF** still holds records from every year in the raw data, but the **weather DF** only covers 2017 to 2020. The `filter()` with `%in%` keeps only the records whose *record_year* falls in `2017:2020`, and `nrow` counts what's left. You should know I added this filter after running `diagnostic-NA-data`, the last chunk in this stage, since the weather join came back mostly NA while every year was still in the data.
 
 ```{r homicide-year-filter}
+#| label: 00-homicide-year-filter
 #| warning: true
 
 # Filter the final homicide data to the four years (2017-2020).
@@ -2683,6 +2768,7 @@ Now the **final DF** went from *197,147* records to *15,766*, so the filter remo
 So, the **weather DF** has one row per state for each day, with the date in *daily_time*, while the **final DF** has *record_month* and *record_year* instead. Inside the `mutate()`, `lubridate::month()` with `label = TRUE` and `abbr = FALSE` gives the full month name, and the `as.character()` turns it into plain text, since the `month()` returns a factor that wouldn't match the text in the **final DF**. Then, `lubridate::year()` pulls out the year, and both are saved under the same column names the **final DF** uses. To check them, `distinct()` and `arrange()` list each month and year pair once, and `print(n = 20)` shows the first 20.
 
 ```{r weather-extract-monthyear}
+#| label: 00-weather-extract-monthyear
 #| warning: true
 
 # Get the full month name and numerical year from the daily_time variable.
@@ -2720,6 +2806,7 @@ Based on the run, the tibble header shows *48* month and year pairs, which is 12
 Next, the `group_by()` groups the **weather DF** by *state*, *record_month*, and *record_year*, and the `summarise()` turns each group's daily rows into one row. It uses the `mean()` for *temp_2m_avg* and *relative_humidity_2m_avg* and `sum` for *rain_sum* and *snowfall_sum*, since temperature and humidity make sense as a monthly average, while rain and snowfall add up over the month. The `.groups = "drop"` removes the grouping afterward, saving the **monthly weather DF** (`weather_monthly`), and the `nrow()` counts the rows.
 
 ```{r weather-monthly-agg}
+#| label: 00-weather-monthly-agg
 #| warning: true
 
 # Aggregate daily weather into one row per state, month, and year.
@@ -2748,6 +2835,7 @@ The **monthly weather DF** has *2,832* rows. Divided by the *48* month-year pair
 Then, `left_join` adds the **monthly weather DF** to the **final DF** by *state*, *record_month*, and *record_year*, so each record gets the weather for its state in the month and year the homicide happened. After that, `nrow` counts the records, and the `mean()` with `is.na` gives the NA proportion of *temp_2m_avg*.
 
 ```{r join-weather-to-final}
+#| label: 00-join-weather-to-final
 #| warning: true
 
 # Join the final homicide data with the monthly weather data by state, month, and year.
@@ -2779,6 +2867,7 @@ Happily, the results show that the **final DF** still has *15,766* records, so t
 Just to preface, I wrote this last chunk when the weather join first came back with about 92% of its weather values as NA, to see whether the state and month values in the two DFs didn't line up. First, `distinct` and `arrange` list each *state* in the **weather DF**, and `print(n = 60)` shows all of them. The same two functions run on the **final DF**, but with no column named inside them, so they keep each unique record and print whole rows instead of a list of states. Lastly, the two `setdiff()` calls look for month names that show up in one DF but not the other, checking both directions.
 
 ```{r diagnostic-NA-data}
+#| label: 00-diagnostic-NA-data
 #| warning: true
 
 # Look for state or month mismatches between the weather and homicide data.
@@ -2820,6 +2909,7 @@ After the run, the **weather DF** has *59* state values, written as two-letter a
 Because I'll be using the U.S. Census Bureau's state and county shapes from the `tigris` package during the analysis, each county name in *CNTYFIPS* needs to match its Census name exactly, so every record can be paired with its county shape. Eleven county names in *CNTYFIPS* are spelled differently from the Census Bureau's 2020 county names, such as *De Kalb, GA* instead of *DeKalb, GA*, and municipal police records in Richmond and Roanoke, Virginia, are listed under the county names even though they belong to the independent cities of the same names. A lookup table pairs each misspelled name with its Census spelling; a second step moves the Richmond and Roanoke city records to their city names, and both corrections are applied before the final data is saved.
 
 ```{r cntyfips-census-names-lookup}
+#| label: 00-cntyfips-census-names-lookup
 #| warning: true
 
 # Recode differently spelled county names from the 2020 Census names.
@@ -2858,6 +2948,7 @@ homicide_final <- homicide_final %>%
 ```
 
 ```{r cntyfips-census-names-reassign}
+#| label: 00-cntyfips-census-names-reassign
 #| warning: true
 
 # Move Virginia city records to their city names.
@@ -2902,6 +2993,7 @@ After the corrections, the data still has *15,766* records, so no rows were adde
 With the year filter and weather in place, `arrow::write_parquet()` saves the **final DF** as a Parquet file, and `here::here()` builds its path to the processed data folder. Parquet keeps each column's data type, so the file reads back the same way it was saved.
 
 ```{r final-homicide-to-parquet}
+#| label: 00-final-homicide-to-parquet
 #| warning: true
 
 # Save the finalized, year-filtered, weather-joined homicide dataset as a Parquet file.
@@ -2921,6 +3013,7 @@ arrow::write_parquet(
 Then, `arrow::read_parquet()` reads the file back in, saving it as the **reloaded DF** (`homicide_final_reloaded`), and the `==` compares the `nrow()` of both DFs to make sure no records were lost or added when saving and reading the file.
 
 ```{r load-homicide-parquet}
+#| label: 00-load-homicide-parquet
 #| warning: true
 
 # Reload the saved Parquet dataset.
@@ -2948,6 +3041,7 @@ It prints *TRUE*, so the **reloaded DF** has the same number of records as the *
 Next, I'll recheck eight columns in the **reloaded DF**: the two race columns, four weather columns, *agency_population*, and *location_match*. The `select()` keeps only those columns, while `glimpse()` shows each column's data type and first few values. The second `select()` keeps the same columns, and `summarise` with `across(everything(), ...)` applies `sum` to `is.na` for each column, counting its NA values; `.` represents each column in turn.
 
 ```{r reverify-homicide-parquet}
+#| label: 00-reverify-homicide-parquet
 #| warning: true
 
 # Check the data types and null counts.
@@ -2994,6 +3088,7 @@ The `glimpse()` shows *15,766* records across *8* columns. The race columns and 
 After that, `count` gives the number of records in each group of *victim_racial_construct* and then *offender_racial_construct*, to see how balanced the groups are. Lastly, `summarise` with `n_distinct()` counts how many different values *location_match* has.
 
 ```{r category-balance-and-power}
+#| label: 00-category-balance-and-power
 #| warning: true
 
 # Check the victim and offender race category counts.
@@ -3020,6 +3115,7 @@ The victim groups are *5,626* Black and *10,140* Not Black, which add up to 15,7
 Since offender race has an *"Unknown"* group, the last check compares it against *solved_status* to see whether *"Unknown"* comes mostly from cases that weren't solved. The `count()` counts each pairing of solved status and offender race, and `group_by` with `mutate` turns each count into a percent of its solved-status group, saved as *status_pct*. The `ungroup()` removes the grouping afterward.
 
 ```{r offender-unknown-crosstab}
+#| label: 00-offender-unknown-crosstab
 #| warning: true
 
 # Check offender race against solved cases.
@@ -3048,6 +3144,7 @@ For the unsolved cases (*"No"*), *2,619* of the 2,630 records, or *99.6%*, have 
 From the **reloaded DF**, the `mutate()` with `case_when` adds a new column, *jurisdiction_match*. When *agency_population* is NA, the record gets *"Surrounding Area,"* and `TRUE` catches every other record, giving it *"Within Jurisdiction."* That's saved as the **modeling DF** (`homicide_modeling_df`), and `nrow` and `count` show the number of records and the size of each group. I added this column so the records with no agency population are marked as their own group instead of only showing NA.
 
 ```{r build-model-data}
+#| label: 00-build-model-data
 #| warning: true
 
 # Derive surrounding/within jurisdiction predictor.
@@ -3075,6 +3172,7 @@ The **modeling DF** still has *15,766* records. Of these, *2,897* are *"Surround
 Then, I'll check how the missing agency population overlaps with the two groups. The first `filter()` with `is.na` keeps the records with no *agency_population*, and the second uses `!is.na`, where the `!` means "not," so it keeps the records that have one. Each `count()` shows which *jurisdiction_match* groups are in them. Lastly, `count` with `group_by` and `mutate` turns the victim race counts into a percent of each jurisdiction group, saved as *group_pct*, and the `ungroup()` removes the grouping.
 
 ```{r jurisdiction-na-check}
+#| label: 00-jurisdiction-na-check
 #| warning: true
 
 # Check missing agency population overlapping with the jurisdiction groups.
@@ -3117,6 +3215,7 @@ The missing-population check shows that all of its *2,897* records are *"Surroun
 To finish, I'll save the **modeling DF** with `arrow::write_parquet()` as its own Parquet file in the processed data folder, separate from the **final DF**'s file. Then, I'll read it back with `arrow::read_parquet()` and get its number of rows and columns with `dim()`.
 
 ```{r modeling-data-to-parquet}
+#| label: 00-modeling-data-to-parquet
 #| warning: true
 
 # Save the modeling dataset as a Parquet file.
@@ -3153,6 +3252,8 @@ In conclusion, the saved file has *15,766* rows and *35* columns, one more than 
 Lastly, this chunk lists the installed versions of the ten packages in `c()`. You can comment it out to prevent it from running every time the script runs, but I'll leave it executable, so that it prints each package's name and version.
 
 ```{r cleaning-package-list}
+#| label: 00-cleaning-package-list
+
 # Produce the package list for C3 that are included in this file.
 
 #== display package versions ==
@@ -3181,6 +3282,8 @@ sapply(
 ## Session
 
 ```{r cleaning-session}
+#| label: 00-cleaning-session
+
 # View comprehensive script summary and metadata.
 
 #== enhanced method ==
