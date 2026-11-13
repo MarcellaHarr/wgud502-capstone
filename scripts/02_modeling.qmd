@@ -1,6 +1,6 @@
 ---
 title: "Model Data Build: Rough & Full Model"
-subtitle: "Summary & Metrics & Visuals"
+subtitle: "Summary, Metrics, & Visuals"
 author: "Marcella Harris"
 date: "`r Sys.Date()`"
 format: 
@@ -11,7 +11,13 @@ format:
     toc-depth: 3
 bibliography: references.bib
 nocite: |
-  @*
+  @Andrzej2020, @Twomey2026, @Buck2025, @Olumide2025, @Muldoon2021
+  @Dhana2026, @PrabhakaranS2026f, @Datanovia2026a, @PositTidymodels,
+  @Wong2026, @Masum2026d, @Matt2020, @Masum2026a, @Hadley2024, @Masum2026b
+  @Masum2026c, @Datanovia2026b, @stefan2022, @Herv2017, @LTyrone2024,
+  @russhh2017, @Wickham2026, @Tang2023, @Iannone2026, @Mller2025,
+  @Wickham2026b, @Wickham2016, @Kassambara2026, @Robin2011, @Kuhn2020,
+  @Csrdi2026
 csl: apa-numeric-superscript-brackets.csl
 execute: 
   echo: true
@@ -92,7 +98,7 @@ homicide_modeling_df <- arrow::read_parquet(
 #== display records ==
 homicide_modeling_df %>%
   head() %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Homicide Modeling Dataframe**")
@@ -138,14 +144,14 @@ homicide_modeling_df <- homicide_modeling_df %>%
 #== display counts ==
 homicide_modeling_df %>%
   count(victim_racial_construct) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Female Victim Racial Class**")
   )
 
 #== fit the model ==
-# (Dhana, 2026; Prabhakaran, 2026)
+# (Dhana, 2026; Prabhakaran, 2026f)
 weather_fit_poc <- logistic_reg() %>%
   set_engine(
     "glm"
@@ -162,7 +168,7 @@ weather_fit_poc <- logistic_reg() %>%
 
 #== coefficient table + p-values ==
 weather_fit_poc %>%
-  # (Dhana, 2026; Datanovia, 2026)
+  # (Dhana, 2026; Datanovia, 2026a)
   broom::tidy() %>%
   # (Andrzej, 2020)
   mutate_if(
@@ -171,7 +177,7 @@ weather_fit_poc %>%
     5
   ) %>%
   as.data.frame() %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Rough Model: Coefficient + Z-value + P-value**"),
@@ -179,12 +185,13 @@ weather_fit_poc %>%
   )
 
 #== convergence check ==
-# (Prabhakaran, 2026)
+# (Prabhakaran, 2026f)
 extract_fit_engine(
   weather_fit_poc
 )$converged
 
 #== predicted class split ==
+# (Datanovia, 2026a)
 weather_fit_poc %>%
   predict(
     new_data = homicide_modeling_df
@@ -193,7 +200,7 @@ weather_fit_poc %>%
     # (Dhana, 2026)
     .pred_class
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Predicted Female Class Split**"),
@@ -219,7 +226,7 @@ set.seed(2026)
 
 #== reproducible split ==
 homicide_split <- homicide_modeling_df %>%
-  # (Datanovia, 2026; Dhana, 2026)
+  # (Prabhakaran, 2026g; Datanovia, 2026a; Dhana, 2026)
   initial_split(
     prop = 3 / 4,
     strata = victim_racial_construct
@@ -227,11 +234,11 @@ homicide_split <- homicide_modeling_df %>%
 
 #== train/test split data ==
 homicide_train <- homicide_split %>%
-  # (Datanovia, 2026; Dhana, 2026)
+  # (Datanovia, 2026a; Dhana, 2026)
   training()
 
 homicide_test <- homicide_split %>%
-  # (Datanovia, 2026; Dhana, 2026)
+  # (Datanovia, 2026a; Dhana, 2026)
   testing()
 
 #== call the total rows function ==
@@ -249,7 +256,7 @@ homicide_train %>%
   mutate(
     prop = n / sum(n)
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Training Model Outcome**"),
@@ -263,7 +270,7 @@ homicide_test %>%
   mutate(
     prop = n / sum(n)
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Testing Model Outcome**"),
@@ -285,7 +292,7 @@ The recipe lists the outcome and the six predictors. It fills the missing agency
 # Specify the preprocessing steps, and set up the outcome and the six predictors.
 
 #== build the recipe ==
-# (Dhana, 2026; Datanovia, 2026)
+# (Dhana, 2026; Datanovia, 2026a)
 homicide_recipe <- recipes::recipe(
   victim_racial_construct ~
     temp_2m_avg +
@@ -319,7 +326,7 @@ The recipe and the logistic regression are bundled into one workflow and fit on 
 # Fit the full logistic regression on the training set.
 
 #== bundle steps ==
-# (Datanovia, 2026; Dhana, 2026; Prabhakaran, 2026)
+# (Datanovia, 2026a; Dhana, 2026)
 full_fit <- workflows::workflow() %>%
   #== glue the recipe ==
   workflows::add_recipe(
@@ -327,7 +334,7 @@ full_fit <- workflows::workflow() %>%
   ) %>%
   #== glue the model ==
   workflows::add_model(
-    # (Dhana, 2026; Prabhakaran, 2026)
+    # (Dhana, 2026; Prabhakaran, 2026f)
     logistic_reg() %>%
       set_engine(
         "glm"
@@ -340,7 +347,7 @@ full_fit <- workflows::workflow() %>%
 
 #== coefficient table + p-values ==
 full_fit %>%
-  # (Dhana, 2026; Datanovia, 2026)
+  # (Dhana, 2026; Datanovia, 2026a)
   broom::tidy() %>%
   # (Andrzej, 2020)
   mutate_if(
@@ -349,7 +356,7 @@ full_fit %>%
     5
   ) %>%
   as.data.frame() %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Full Model: Coefficient + Z-value + P-value**"),
@@ -357,7 +364,7 @@ full_fit %>%
   )
 
 #== convergence check ==
-# (Prabhakaran, 2026)
+# (Prabhakaran, 2026f)
 workflowsets::extract_fit_engine(
   full_fit
 )$converged
@@ -392,7 +399,7 @@ test_results %>%
     .pred_Black
   ) %>%
   head() %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Binded Predictions**"),
@@ -405,7 +412,7 @@ test_results %>%
     # (Dhana, 2026)
     .pred_class
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Model Outcome Levels**"),
@@ -441,7 +448,7 @@ test_results %>%
     .pred_Black,
     event_level = "second"
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Predictions Performance Metrics**"),
@@ -464,7 +471,7 @@ The coefficients in the full model are on the log-odds scale, so here they're co
 
 #== odds ratios + 95% CIs ==
 full_fit %>%
-  # (Dhana, 2026; Datanovia, 2026)
+  # (Datanovia, 2026a; Dhana, 2026)
   broom::tidy(
     exponentiate = TRUE,
     conf.int = TRUE
@@ -486,7 +493,7 @@ full_fit %>%
     5
   ) %>%
   as.data.frame() %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Adjusted Odds Ratios**"),
@@ -570,7 +577,7 @@ predictor_quartiles <- homicide_train %>%
 
 #== display quartiles ==
 predictor_quartiles %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Predictors' Measures of Positions**")
@@ -587,7 +594,7 @@ Then, because the odds ratios describe changes in the odds rather than in percen
 # Predict the proportion of Black victims for each jurisdiction group.
 
 #== predictor records ==
-# (Posit, n.d.)
+# (Posit team, n.d.)
 jurisdiction_points <- expand.grid(
   temp_2m_avg = 60.887,
   relative_humidity_2m_avg = 70.233,
@@ -617,7 +624,7 @@ jurisdiction_predictions <- full_fit %>%
     ),
     # (Wong, 2026)
     changed = "jurisdiction_match",
-    # (Datanovia, 2026[47])
+    # (Datanovia, 2026b)
     group = c(
       "Low",
       "High"
@@ -626,7 +633,7 @@ jurisdiction_predictions <- full_fit %>%
 
 #== display table ==
 jurisdiction_predictions %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Predictor per Jurisdiction Class Table**"),
@@ -645,7 +652,7 @@ Next, since the numeric predictors don't have groups, I'll build two hypothetica
 
 #== records of predictor change ==
 quartile_points <- bind_rows(
-  # (Posit, n.d.)
+  # (Posit team, n.d.)
   expand.grid(
     changed = "temp_2m_avg",
     temp_2m_avg = c(
@@ -658,7 +665,7 @@ quartile_points <- bind_rows(
     agency_population = 393,
     jurisdiction_match = "Within Jurisdiction"
   ),
-  # (Posit, n.d.)
+  # (Posit team, n.d.)
   expand.grid(
     changed = "relative_humidity_2m_avg",
     temp_2m_avg = 60.887,
@@ -671,7 +678,7 @@ quartile_points <- bind_rows(
     agency_population = 393,
     jurisdiction_match = "Within Jurisdiction"
   ),
-  # (Posit, n.d.)
+  # (Posit team, n.d.)
   expand.grid(
     changed = "rain_sum",
     temp_2m_avg = 60.887,
@@ -684,7 +691,7 @@ quartile_points <- bind_rows(
     agency_population = 393,
     jurisdiction_match = "Within Jurisdiction"
   ),
-  # (Posit, n.d.)
+  # (Posit team, n.d.)
   expand.grid(
     changed = "snowfall_sum",
     temp_2m_avg = 60.887,
@@ -697,7 +704,7 @@ quartile_points <- bind_rows(
     agency_population = 393,
     jurisdiction_match = "Within Jurisdiction"
   ),
-  # (Posit, n.d.)
+  # (Posit team, n.d.)
   expand.grid(
     changed = "agency_population",
     temp_2m_avg = 60.887,
@@ -727,7 +734,7 @@ quartile_predictions <- full_fit %>%
       100 * .pred_Black,
       1
     ),
-    # (Datanovia, 2026[47])
+    # (Datanovia, 2026b)
     group = rep(
       c(
         "Low",
@@ -739,7 +746,7 @@ quartile_predictions <- full_fit %>%
 
 #== display table ==
 quartile_predictions %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Predictor Proportion Change Table**"),
@@ -772,7 +779,7 @@ calibration_table <- calibration_data(
 
 #== display bins ==
 calibration_table %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Calibration Curve Outcomes**"),
@@ -873,11 +880,12 @@ quartile_ranges <- predictor_quartiles %>%
   )
 
 #== scaled odds ratios ==
-# (Masum, 2026[41])
 odds_ratio_table <- full_fit %>%
+  # (Masum, 2026d)
   broom::tidy(
     exponentiate = TRUE
   ) %>%
+  # (Masum, 2026d; Wickham et al., 2026d)
   filter(
     term != "(Intercept)"
   ) %>%
@@ -893,15 +901,21 @@ odds_ratio_table <- full_fit %>%
       is.na(iqr) ~ 1,
       TRUE ~ iqr
     ),
-    # (Masum, 2026[41]; Masum, 2026[38])
+    # (Masum, 2026d)
     conf.low = exp(
-      iqr * (log(estimate) - 1.96 * std.error)
+      # (Masum, 2026a)
+      iqr *
+        # (Masum, 2026d)
+        (log(estimate) - 1.96 * std.error)
     ),
-    # (Masum, 2026[41]; Masum, 2026[38])
+    # (Masum, 2026d)
     conf.high = exp(
-      iqr * (log(estimate) + 1.96 * std.error)
+      # (Masum, 2026a)
+      iqr *
+        # (Masum, 2026d)
+        (log(estimate) + 1.96 * std.error)
     ),
-    # (Masum, 2026[38])
+    # (Masum, 2026a)
     estimate = exp(
       iqr * log(estimate)
     ),
@@ -915,13 +929,13 @@ odds_ratio_table <- full_fit %>%
       term ==
         "jurisdiction_match_Within.Jurisdiction" ~ "Within Jurisdiction vs. Surrounding Area"
     ),
-    # (Masum, 2026[41])
+    # (Masum, 2026d)
     significant = p.value < 0.05
   )
 
 #== display scaled odds ratios ==
-# (Masum, 2026[39]; Masum, 2026[38])
 odds_ratio_table %>%
+  # (Masum, 2026b; Masum, 2026a)
   dplyr::select(
     term,
     iqr,
@@ -945,7 +959,7 @@ odds_ratio_table %>%
       digits = 3
     )
   ) %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Scaled Odds Ratios**"),
@@ -961,7 +975,7 @@ odds_ratio_table %>%
 # Plot the odds ratio.
 
 #== forest plot ==
-# (Masum, 2026[39])
+# (Masum, 2026b)
 odds_ratio_plot <- ggplot(
   odds_ratio_table,
   aes(
@@ -975,7 +989,7 @@ odds_ratio_plot <- ggplot(
     linetype = "dashed",
     color = "#FFB060"
   ) +
-  # (Masum, 2026[40])
+  # (Masum, 2026c)
   geom_pointrange(
     aes(
       xmin = conf.low,
@@ -984,7 +998,7 @@ odds_ratio_plot <- ggplot(
     size = 0.8,
     linewidth = 1.1
   ) +
-  # (Masum, 2026[41])
+  # (Masum, 2026d)
   geom_text(
     aes(
       label = sprintf("OR = %.2f", estimate)
@@ -993,7 +1007,7 @@ odds_ratio_plot <- ggplot(
     size = 3.8,
     show.legend = FALSE
   ) +
-  # (Masum, 2026[41])
+  # (Masum, 2026d)
   scale_color_manual(
     values = c(
       "TRUE" = "#275561",
@@ -1001,7 +1015,7 @@ odds_ratio_plot <- ggplot(
     ),
     guide = "none"
   ) +
-  # (Masum, 2026[41])
+  # (Masum, 2026d)
   scale_x_log10() +
   labs(
     x = "Odds ratio (log scale)",
@@ -1061,7 +1075,7 @@ practical_long <- bind_rows(
         changed == "agency_population" ~ "Agency population"
       )
     ),
-    # (Datanovia, 2026[47])
+    # (Datanovia, 2026b)
     group = factor(
       group,
       levels = c(
@@ -1078,7 +1092,7 @@ practical_long <- bind_rows(
 
 #== build table ==
 practical_long_table <- practical_long %>%
-  # (Muldon, 2021)
+  # (Muldoon, 2021)
   gt() %>%
   tab_header(
     title = md("**Predictor Proportion Changes**"),
@@ -1097,7 +1111,7 @@ practical_long_table
 # Plot each predictor's predicted proportion of Black victims from low to high.
 
 #== paired plot ==
-# (Datanovia, 2026[47]; stefan, 2022)
+# (Datanovia, 2026b; stefan, 2022)
 practical_plot <- ggpubr::ggpaired(
   practical_long,
   x = "group",
@@ -1116,7 +1130,7 @@ practical_plot <- ggpubr::ggpaired(
   ),
   # (L Tyrone, 2024)
   line.color = NA,
-  # (Datanovia, 2026[47]; stefan, 2022)
+  # (Datanovia, 2026b; stefan, 2022)
   xlab = "Predictor value",
   ylab = "Predicted Black victims (%)"
 ) +
