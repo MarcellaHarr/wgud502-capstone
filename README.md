@@ -65,9 +65,13 @@ The solution was to split the homicide data by agency type, join each subset wit
 | Tribal / Regional police / Primary federal LE | none available | 423 | N/A, no key exists | 100% (documented exclusion) |
 | **Total (reassembled)** | | **197,147** | | |
 
-I also found that several specific fixes were necessary along the way. These included normalizing all-caps and whitespace around join keys, correcting a typo in the raw homicide data's state name from "Rhodes Island" to "Rhode Island," standardizing county name formatting, and updating county police department names to match across sources. Additionally, placeholder values of `-999` in some columns were recoded as missing data to ensure accurate reporting of missingness during analysis.
+I also found that several specific fixes were necessary along the way. These included normalizing all-caps and whitespace around join keys, correcting a typo in the raw homicide data's state name from "Rhodes Island" to "Rhode Island," standardizing county name formatting, and updating county police department names to match across sources. 
 
-After joining all subsets and understanding NA rates, the data were combined into a single dataset using only shared columns identified with `intersect()`, then merged with `bind_rows()`. The final dataset contains 197,147 records of female victims with known race across all years, with no missing location data. Filtering to 2017–2020 and adding weather data resulted in a final analytical dataset of 15,766 records.
+Additionally, placeholder values of `-999` in some columns were recoded as missing data to ensure accurate reporting of missingness during analysis. Finally, eleven county names were corrected to match the U.S. Census Bureau's 2020 spellings (for example, *De Kalb, GA* to *DeKalb, GA*), and 43 Richmond city and 9 Roanoke city records were moved from their county names to their independent cities, so every record could be placed on the county map.
+
+After joining all subsets and understanding NA rates, the data were combined into a single dataset using only shared columns identified with `intersect()`, then merged with `bind_rows()`. The final dataset contains 197,147 records of female victims with known race across all years, with no missing location data. 
+
+Filtering from 2017 through 2020 and adding the monthly weather data resulted in a final analytical dataset of 15,766 records, saved as `homicide_final.parquet`. A copy with the added *jurisdiction_match* column categories (Within Jurisdiction or Surrounding Area) is saved as `homicide_modeling.parquet` for the exploration and modeling scripts.
 
 ## Project Structure
 
