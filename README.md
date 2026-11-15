@@ -11,8 +11,8 @@ Essentially, this is a predictive analytics endeavor. I use logistic regression 
 This is my Data Analytics Capstone program, course D502. It's built around three graded deliverables:
 
 1. Topic Approval Form (Task 1)
-2. Data Analytics Report (Task 2)
-3. Data Analytics Presentation (Task 3), which includes a recorded walkthrough of the findings
+2. Project Proposal (Task 2)
+3. Project Report (Task 3), which includes a recorded Panopto presentation of the findings
 
 Beyond the grade, this project is meant to be a real demonstration of end to end analytics work. That means sourcing and cleaning messy real world data, making and documenting defensible methodology decisions, running a predictive model, and communicating the results clearly.
 
@@ -40,7 +40,7 @@ A few variables were intentionally left out as predictors, including offender ag
 | Murder Accountability Project (MAP), Supplementary Homicide Report | Incident-level homicide records including victim and offender demographics, weapon, relationship, and circumstance | [murderdata.org](https://www.murderdata.org/p/data-docs.html) | 894,636 |
 | HIFLD Local Law Enforcement Locations | Law enforcement agency data including type, location, sworn officer count, and population served | [DataLumos](https://www.datalumos.org/datalumos/project/239493/version/V1/view) | 23,486 |
 | Open-Meteo Historical Weather API | Daily weather records, including average temperature, humidity, rainfall, and snowfall | [Open-Meteo](https://open-meteo.com/en/docs/historical-weather-api) | 89,121 |
-| Kaggle US State and Territory Latitude and Longitude Data | Latitude and longitude reference data for U.S. states and territories | [Kaggle](https://www.kaggle.com/datasets/tennerimaheshwar/us-state-and-territory-latitude-and-longitude-data) | 89,121 |
+| Kaggle US State and Territory Latitude and Longitude Data | Latitude and longitude reference data for U.S. states and territories | [Kaggle](https://www.kaggle.com/datasets/tennerimaheshwar/us-state-and-territory-latitude-and-longitude-data) | 61 |
 
 *Weather and state coordinate data were combined into a single raw file prior to cleaning; more on that in Methodology.*
 
@@ -71,7 +71,7 @@ Additionally, placeholder values of `-999` in some columns were recoded as missi
 
 After joining all subsets and understanding NA rates, the data were combined into a single dataset using only shared columns identified with `intersect()`, then merged with `bind_rows()`. The final dataset contains 197,147 records of female victims with known race across all years, with no missing location data. 
 
-Filtering from 2017 through 2020 and adding the monthly weather data resulted in a final analytical dataset of 15,766 records, saved as `homicide_final.parquet`. A copy with the added *jurisdiction_match* column categories (Within Jurisdiction or Surrounding Area) is saved as `homicide_modeling.parquet` for the exploration and modeling scripts.
+Filtering to records from 2017 through 2020 and adding the monthly weather data resulted in a final analytical dataset of 15,766 records, saved as `homicide_final.parquet`. A copy with the added *jurisdiction_match* column categories (Within Jurisdiction or Surrounding Area) is saved as `homicide_modeling.parquet` for the exploration and modeling scripts.
 
 ## Project Structure
 
@@ -168,8 +168,8 @@ This capstone is graded across three sequential Performance Assessment tasks. Ta
 | Task | Description | Status |
 |---|---|---|
 | Task 1: Topic Approval Form | Proposes the research question, data sources, and methodology for review | Passed (Sep 15) |
-| Task 2: Data Analytics Report | Full written report covering data collection, extraction/preparation, and analysis methods | Not started |
-| Task 3: Data Analytics Presentation | Written report plus a recorded presentation of findings | Not started |
+| Task 2: Project Proposal | Written proposal covering the research question, project plan, analysis design, and data description | Passed on first attempt (Nov 12) |
+| Task 3: Project Report | Final report of the completed analysis and results, plus a recorded Panopto presentation | In progress |
 
 ## Take Aways
 
