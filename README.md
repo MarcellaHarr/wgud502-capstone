@@ -138,8 +138,11 @@ This capstone is graded across three sequential Performance Assessment tasks. Ta
 
 ## Take Aways
 
-*In progress. Will be filled in once the analysis and modeling are complete.*
+- The hardest part of this project was matching each homicide to its law enforcement agency, since the four sources had no shared key.
+- All six predictors were statistically significant, but only relative humidity was large enough to matter in practice, changing the predicted proportion of Black victims by more than 5.5 percentage points.
+- My model ranked Black victims above Not Black victims better than chance (ROC AUC 0.647), but its accuracy (64.0%) still fell short of the 64.3% always-"Not Black" baseline.
+- Odds ratios are per one unit, so I scaled the predictors, which are measured in people, degrees, and inches, to the same 1st-to-3rd-quartile range before comparing them on one plot.
 
 ## Conclusion
 
-*In progress. Will be filled in once the project is finished.*
+Among female homicide victims from 2017 through 2020, all six conditions were linked to the victim being Black, with every 95% confidence interval excluding 1 at an alpha of .05. However, the model’s accuracy (64.0%) fell just short of the 64.3% always-“Not Black” baseline, so together these conditions weren’t strong enough to classify individual victims. Only relative humidity changed the predicted proportion of Black victims by more than the 5.5-point cutoff, rising from 33.2% to 41.2%. These results show association, not cause, so public health agencies and violence prevention programs could use them to plan outreach for groups and places, not to predict any one victim’s race. Future work could add stronger predictors, such as county-level demographics and income, and use weather measured closer to where each homicide happened instead of statewide monthly averages.
