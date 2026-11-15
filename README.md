@@ -72,49 +72,69 @@ After joining all subsets and understanding NA rates, the data were combined int
 ## Project Structure
 
 ```
-data/
+data/                                      # gitignored, not on GitHub
   raw/
-    uncleaned_geojson_df.csv
-    uncleaned_map_homicides_df.csv
-    uncleaned_weather_2017-2020_v3.csv
+    uncleaned_geojson_df.csv               # law enforcement agency data
+    uncleaned_map_homicides_df.csv         # homicide records
+    uncleaned_weather_2017-2020_v3.csv     # weather with state coordinates
   processed/
-    homicide_final.parquet                 # final analytical dataset
-  weather_homicide_nationalagency_df.parquet   # legacy D497 artifact, unused by this pipeline
-docs/                                    # TBD
+    homicide_final.parquet                 # final cleaned homicide dataset (15,766 records, 34 columns)
+    homicide_modeling.parquet              # modeling dataset (15,766 records, 35 columns)
 output/
-  dashboard/                             # TBD
-  figures/                               # TBD
-renv/                                    # renv package library (dependency management, auto-generated)
+  figures/
+    fig_1.png                              # victims by race (bar chart)
+    fig_2.png                              # predictors by victim race (box plots)
+    fig_3.png                              # victim race by jurisdiction group (county map)
+    fig_4.png                              # correlation between predictors (heatmap)
+    fig_5.png                              # Black proportion by state (bar chart)
+    fig_6.png                              # calibration curve
+    fig_7.png                              # scaled odds ratios (forest plot)
+    fig_8.png                              # practical-significance changes (paired plot)
+renv/                                      # renv setup files (package library is gitignored)
 scripts/
-  00_data_cleaning_rebuild.qmd           # primary data cleaning / merge pipeline
-  00_data_cleaning_rebuild.html          # rendered output
-  01_data_exploration.qmd                # TBD
+  00_data_cleaning_rebuild.qmd             # data cleaning and merge pipeline
+  01_data_exploration.qmd                  # exploratory analysis (Figs. 1 to 5)
+  02_modeling.qmd                          # logistic regression, evaluation, and model visuals (Figs. 6 to 8)
+  utils.R                                  # helper functions and shared ggplot theme
+  references.bib                           # sources cited in the scripts
+  apa-numeric-superscript-brackets.csl     # citation style for the rendered reports
 .Rprofile
 .gitignore
+README.md
 renv.lock
 ```
 
-*`docs/`, `output/dashboard/`, `output/figures/`, and `01_data_exploration.qmd` are placeholders for now and will fill in as the analysis and reporting phases progress.*
+*The `data/` folder and the rendered `.html` reports are gitignored, so they aren't on GitHub. Links to the raw data are listed under Data Sources.*
 
 ## Tools & Tech Stack
 
 | Tool | Purpose |
 |---|---|
-| Positron | IDE for writing and running the project |
-| R (4.6.1) | Core language for data cleaning, joins, and analysis |
-| Quarto (1.7.33) | Notebook format for the cleaning pipeline (`.qmd`), rendering to HTML |
+| Positron (2026.09.1) | IDE for writing and running the project |
+| R (4.6.1) | Core language for cleaning, joining, exploring, and modeling the data |
+| Quarto (1.7.33) | Notebook format for the three scripts (`.qmd`), rendering to HTML |
 | renv (1.2.3) | Dependency and package version management |
-| git | Version control (local only, no remote yet) |
-| dplyr | Data wrangling: filtering, joins, mutating, grouping |
-| tidyr | Reshaping and tidying data |
-| stringr | String manipulation and pattern matching |
-| stringi | Underlying string operations (used alongside stringr) |
-| here | Reliable, project-relative file paths |
-| arrow | Reading/writing the `.parquet` dataset |
-| ggplot2 | Data visualization |
-| rmarkdown | Report rendering support |
-| lubridate | Date and time handling |
-| readr | Reading CSV files |
+| git and GitHub | Version control, hosted at [MarcellaHarr/wgud502-capstone](https://github.com/MarcellaHarr/wgud502-capstone) |
+| here (1.0.2) | Reliable, project-relative file paths |
+| readr (2.2.0) | Reading CSV files |
+| arrow (24.0.0) | Reading and writing the `.parquet` datasets |
+| dplyr (1.2.1) | Data wrangling: filtering, joins, mutating, grouping |
+| tidyr (1.3.2) | Reshaping and tidying data |
+| tibble (3.3.1) | Building small tables in the helper functions |
+| stringr (1.6.0) | String manipulation and pattern matching |
+| lubridate (1.9.5) | Date and time handling |
+| gt (1.4.0) | Formatted summary and results tables |
+| ggplot2 (4.0.3) | Data visualization (Figs. 1 to 7) |
+| ggpubr (1.0.0) | Paired plot of the practical-significance changes (Fig. 8) |
+| sf (1.1-3) | Joining record counts to county shapes and finding county center points |
+| lwgeom (0.2-17) | Geometry functions that support sf |
+| tigris (2.3.0) | 2020 U.S. Census state and county shapes |
+| tidymodels (1.5.0) | Modeling framework: data split, recipe, logistic regression, workflow, and metrics |
+| broom (1.0.13) | Coefficient and odds-ratio tables from the fitted model |
+| rmarkdown (2.31) | Report rendering support |
+| sessioninfo (1.2.4) | Recording package versions at the end of each script |
+| osmdata (0.4.1) | Loaded in `01_data_exploration.qmd` for a planned street-level map; not used in the final analysis |
+| pROC (1.19.1) | Loaded in `02_modeling.qmd` for a planned ROC curve; not used in the final analysis |
 
 ## Setup / Getting Started
 
