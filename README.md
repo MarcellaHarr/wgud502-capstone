@@ -138,13 +138,24 @@ renv.lock
 
 ## Setup / Getting Started
 
-This repo is currently local-only (no remote configured yet), so it isn't set up for others to clone and run. A few other things to know if you're looking at the code:
+To run this project on your own machine:
 
-- **Raw data isn't included.** The files in `data/raw/` are gitignored due to size. Sources and links are listed above under Data Sources.
-- **Dependencies are managed with `renv`.** The lockfile (`renv.lock`) tracks package versions used in this project.
-- **The main entry point is `scripts/00_data_cleaning_rebuild.qmd`.** This is where the raw data gets cleaned, joined, and combined into the final analytical dataset.
-
-*Once a remote and reproducible setup path exist, this section will be updated with actual clone/restore/render instructions.*
+1. **Clone the repo.**
+   ```
+   git clone https://github.com/MarcellaHarr/wgud502-capstone.git
+   ```
+2. **Restore the packages.** Open the project folder in Positron (or RStudio), then run this in the R Console to install the exact package versions recorded in `renv.lock`:
+   ```r
+   renv::restore()
+   ```
+3. **Add the raw data.** The raw files aren’t included in the repo. They were downloaded and combined in an earlier course from the sources listed under Data Sources, so the scripts expect the three file names shown under Project Structure in `data/raw/`.
+4. **Run the scripts in order.** `00_data_cleaning_rebuild.qmd` saves the two Parquet files that the other two scripts read, so run it first, then `01_data_exploration.qmd`, then `02_modeling.qmd`. Each one can be rendered from the Terminal:
+   ```
+   quarto render scripts/00_data_cleaning_rebuild.qmd
+   quarto render scripts/01_data_exploration.qmd
+   quarto render scripts/02_modeling.qmd
+   ```
+5. **Have an internet connection for the map.** `01_data_exploration.qmd` downloads the 2020 Census state and county shapes through tigris the first time it runs, then reuses the saved copy.
 
 ## Deliverables
 
