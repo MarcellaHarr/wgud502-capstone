@@ -52,6 +52,9 @@ library(rmarkdown)
 library(sessioninfo)
 ```
 
+<br>
+
+::: {.content-hidden when-profile="book"}
 The function, `load_raw_data()`, uses `here::here()` to build each file's path from the project folder, `read_csv()` to read it, and `stopifnot()` to stop the run if the row count doesn't match the expected number: 894,636 homicide records, 23,486 agency records, and 89,121 weather records. And it lives in the utils.R file, along with all the other functions, and will be called in with the `source()`.
 
 ```{r load-source}
@@ -231,6 +234,7 @@ three_col_check(
 ```
 
 None of the three tables has an NA row, and each one adds up to 894,636 records, the full **homicide DF**. The largest *VicEthnic* group is "Unknown or not reported," with 501,898 records, more than half of the total. That label is also worded differently from *VicRace* and *VicSex*, which both use "Unknown." In *VicRace*, the two largest groups are White and Black.
+:::
 
 <br>
 
@@ -282,6 +286,9 @@ three_col_check(
 
 The **recoded DF** has 197,147 records. Since the earlier victim counts showed 199,567 female victims, dropping "Unknown" race removed 2,420 more. In *victim_racial_construct*, 72,849 records are Black and 124,298 are Not Black, which is the Other Ethnic and White counts in *victim_race_collapsed* added together.
 
+<br>
+
+::: {.content-hidden when-profile="book"}
 Before recoding the offender side, I'll use `count()` to see the *OffRace* categories. This count runs on the full **homicide DF** from the renaming step, not the **recoded DF**, so it covers all 894,636 records.
 
 ```{r view-offrace-counts}
@@ -1147,6 +1154,7 @@ geojson_municipal_dedup %>%
 ```
 
 The **deduplicated DF** has **10,867** rows, and the duplicate check is **0**, so each city and state pair now has one row.
+:::
 
 Finally, the `left_join()` matches the **municipal DF** to the **deduplicated DF** on *city_match* and *state*, followed by the same row-count and *agency_population* NA proportion checks.
 
@@ -1182,8 +1190,7 @@ sum(
 
 The **municipal DF** has **141,096** records, and the **joined DF** has **141,096**, with no many-to-many warning this time. More importantly, the NA proportion is *0.1409962*, or about 14.1%, down from about 84% before deduplicating, since rows without a population were dropped before the join, so a record now goes without one only when its city and state have no local police department row that has one.
 
-<br>
-
+::: {.content-hidden when-profile="book"}
 ## Match sheriff records to sheriff's offices by county
 
 Next up are the sheriff records. This join needs a county name on both sides since a sheriff's office serves a whole county rather than a single city. But first, I'll look at how each side stores its counties. The `distinct()` with `slice_sample(n = 15)` pulls 15 random values from the **homicide DF**'s *CNTYFIPS* column and from the **agency DF**'s *COUNTY* and *COUNTYFIPS* columns. Since there's no `set.seed()`, the sample changes each time the script runs.
@@ -1827,7 +1834,7 @@ The **state joined DF** has *7,081* records, the same as the **state police DF**
 Next, the special police records go through the same steps. The `filter()` keeps the *"Special police"* records from the **subset DF**, with the same `rename()` and `mutate` as before, saving them as the **special police DF** (`homicide_special`). A second `filter()` keeps the *"SPECIAL JURISDICTION"* rows from the **derived DF** with the same `mutate()`, saving them as the **special agency DF** (`geojson_special`), and the `nrow()` counts each one.
 
 ```{r hom-geo-subsets}
-#| 00-hom-geo-subsets
+#| label: 00-hom-geo-subsets
 #| warning: true
 
 # Filter both datasets for the special police-type agencies.
@@ -3211,6 +3218,9 @@ homicide_modeling_df %>%
 ```
 
 The missing-population check shows that all of its *2,897* records are *"Surrounding Area,"* and the non-missing check shows that all of its *12,869* records are *"Within Jurisdiction,"* so *jurisdiction_match* is just a label for whether *agency_population* is missing. In the *"Surrounding Area"* group, *31.2%* of the victims are Black, compared to *36.7%* in the *"Within Jurisdiction"* group; simply put, Black victims make up a somewhat bigger portion of the *"Within Jurisdiction"* records.
+:::
+
+### Wrap Up
 
 To finish, I'll save the **modeling DF** with `arrow::write_parquet()` as its own Parquet file in the processed data folder, separate from the **final DF**'s file. Then, I'll read it back with `arrow::read_parquet()` and get its number of rows and columns with `dim()`.
 
@@ -3245,6 +3255,7 @@ arrow::read_parquet(
 
 In conclusion, the saved file has *15,766* rows and *35* columns, one more than the *34* columns of the **final DF**, since it adds *jurisdiction_match*.
 
+::: {.content-hidden when-profile="book"}
 <br>
 
 ## Miscellaneous: List the package versions
@@ -3291,3 +3302,4 @@ sessioninfo::session_info()
 ``` 
 
 <br>
+:::

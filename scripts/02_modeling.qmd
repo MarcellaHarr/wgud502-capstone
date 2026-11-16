@@ -27,6 +27,8 @@ execute:
 
 <br>
 
+::: {.content-hidden when-profile="book"}
+
 Before loading anything, I set R to print numbers in full decimal form instead of scientific notation so the p-values in the coefficient tables are easier to read.
 
 ```{r set-options}
@@ -43,6 +45,8 @@ options(
   scipen = 999
 )
 ```
+
+:::
 
 Now, I'll load the packages and the helper utils.R script.
 
@@ -66,6 +70,8 @@ library(pROC)
 library(tidymodels)
 library(sessioninfo)
 ```
+
+::: {.content-hidden when-profile="book"}
 
 ```{r load-utils-file}
 #| label: 02-load-utils-file
@@ -214,6 +220,8 @@ weather_fit_poc %>%
 ```
 
 After running, the model showed that it converged. It predicted 4.5% of victims as Black, while 35.7% actually are, so it predicts Black far less often than it occurs. This is only a check, and the full model with agency population and jurisdiction location comes next.
+
+:::
 
 <br>
 
@@ -382,6 +390,8 @@ The full model converged (TRUE). Five predictors have positive estimates: temper
 
 <br>
 
+::: {.content-hidden when-profile="book"}
+
 ## Evaluate the model
 
 Now the testing set is used for the first time. The fitted workflow applies the same recipe and model to the 3,942 testing records, so the model is checked on records it hasn't seen.
@@ -431,6 +441,8 @@ test_results %>%
 
 The testing set kept all *3,942* records and now has *38* columns because the `augment()` added three: the predicted class and the two predicted probabilities, one for each outcome level. The model predicted Not Black for *3,669* records and Black for *273*, while the testing set has *1,407* Black victims. So the model rarely gives Black a predicted probability above the classification cutoff (*0.5*), even though about a third of the testing victims are Black. How often these predictions are right is checked next.
 
+:::
+
 Now it's time to score the predictions against the benchmarks set before testing, an accuracy above the *64.3%* always Not Black baseline and a ROC AUC above *0.5*, along with sensitivity, specificity, and the J-index to show how well each outcome level is identified.
 
 ```{r evaluate-metrics}
@@ -469,6 +481,8 @@ test_results %>%
 The model's accuracy is *0.63978*, which is below the *0.64307* baseline, and its ROC AUC is *0.64748*, which is above *0.5*. Sensitivity is *0.092395*, specificity is *0.94359*, and the J-index is *0.035985*, so the model correctly labels most Not Black victims but identifies few Black victims. Because both benchmarks had to be met, the model does not meet the success criterion.
 
 <br>
+
+::: {.content-hidden when-profile="book"}
 
 ## Coefficients
 
@@ -656,6 +670,8 @@ jurisdiction_predictions %>%
 
 With the weather and agency population held at their medians, the model predicts that *33.2*% of Surrounding Area records and *38.0*% of Within Jurisdiction records are Black, a difference of about *4.8* percentage points. This is smaller than the 5.5-point difference seen in the exploratory analysis, so jurisdiction location on its own falls below the practical-significance cutoff, even though it is statistically significant.
 
+:::
+
 Next, since the numeric predictors don't have groups, I'll build two hypothetical records for each one that differ only in that predictor, one at its 1st quartile and one at its 3rd quartile. The other numeric predictors stay at their medians, and jurisdiction location is set to Within Jurisdiction, the group with most of the records. Then I'll predict the proportion of Black victims for each record and compare each predictor's change with the 5.5-point difference.
 
 ```{r predictor-practical}
@@ -774,6 +790,8 @@ Moving each numeric predictor from its 1st to its 3rd quartile changes the predi
 
 ## Model visuals
 
+::: {.content-hidden when-profile="book"}
+
 ##### Calibration Curve
 
 Next, I'll plot the model's calibration curve on the testing set. The predictions are split into ten equal-size bins, and each bin's average predicted probability of Black is compared with the actual proportion of Black victims in that bin, so the curve shows whether the model's probabilities match what actually happened.
@@ -874,9 +892,13 @@ ggsave(
 
 The model's average predicted probability of being Black ranges from *0.17436* in the lowest bin to *0.54855* in the highest. Only the highest bin’s average exceeds the 0.5 classification cutoff, helping explain why the model classified just *273* testing records as Black. In bins 6 through 9, the points fall above the diagonal (e.g., bin 8 has a predicted value of *0.42029* and an observed value of *0.48477*), indicating that the model underpredicts the proportion of Black victims in those bins. Bins 1, 2, and 10 fall below the diagonal.
 
+:::
+
 ##### Odds Ratios
 
 Then, I'll plot each predictor's odds ratio with its 95% confidence interval as a forest plot. Because the numeric predictors are measured in different units, such as one person, one degree, or one inch, I'll scale each numeric predictor's odds ratio and confidence interval to its quartile range, the change from its 1st to its 3rd quartile (pakalla, 2020; Noah, 2020), so every odds ratio describes the same low-to-high change used in the practical-significance check. Jurisdiction location stays as is, comparing Within Jurisdiction with Surrounding Area.
+
+::: {.content-hidden when-profile="book"}
 
 ```{r odds-ratio-forest}
 #| label: 02-odds-ratio-forest
@@ -984,6 +1006,8 @@ odds_ratio_table %>%
   )
 ```
 
+:::
+
 ```{r odds-ratio-forest-plot}
 #| label: 02-odds-ratio-forest-plot
 #| warning: true
@@ -1068,6 +1092,8 @@ Scaled to each predictor's quartile range, all six 95% confidence intervals excl
 
 Finally, I'll show the practical-significance results in a paired plot. For each predictor, a line connects the predicted proportion of Black victims at its low value (1st quartile, or Surrounding Area for jurisdiction location) to the predicted proportion at its high value (3rd quartile, or Within Jurisdiction). The steeper the line, the greater the change in the expected proportion associated with that predictor.
 
+::: {.content-hidden when-profile="book"}
+
 First, the previously saved predictions, including the jurisdiction pair and five quartile pairs, are combined into one table. Each row is labeled with its predictor and as Low or High, allowing the two values for each predictor to be connected by a line.
 
 ```{r practical-significance}
@@ -1121,6 +1147,8 @@ practical_long_table <- practical_long %>%
 #== display table ==
 practical_long_table
 ```
+
+:::
 
 ```{r practical-significance-plot}
 #| label: 02-practical-significance-plot
@@ -1234,6 +1262,8 @@ All six predictors are statistically significant, but the full model's testing-s
 
 <br>
 
+::: {.content-hidden when-profile="book"}
+
 ## Miscellaneous: List the package versions
 
 List the installed versions of each package and print them out.
@@ -1278,3 +1308,5 @@ sessioninfo::session_info()
 ``` 
 
 <br>
+
+:::

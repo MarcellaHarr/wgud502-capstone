@@ -54,6 +54,8 @@ library(ggplot2)
 library(sessioninfo)
 ```
 
+::: {.content-hidden when-profile="book"}
+
 ```{r load-utils-file}
 #| label: 01-load-utils-file
 #| warning: true
@@ -129,6 +131,8 @@ The analysis data has *15,766* records and *35* columns, the same size the clean
 ```
 
 The raw weather file reports temperature in *°F* (Fahrenheit), rainfall and snowfall in *inch* (inches), and relative humidity in *%* (percent), so each weather odds ratio in the modeling script is per one degree Fahrenheit, one inch, or one percentage point.
+
+:::
 
 <br>
 
@@ -297,6 +301,8 @@ homicide_eda %>%
 Only *agency_population* has missing values (*2,897*); the outcome and the other five predictors have *0*. Its mean (*2,305*) is much higher than its median (*392*), and its maximum is *49,926*, so a few agencies with very large values pull the mean up. Snowfall has a median of *0.000*, so at least half of the records come from months with no snowfall. The records cover *51* states over 2017 through 2020, with the most records in 2020 (*4,564*).
 
 <br>
+
+::: {.content-hidden when-profile="book"}
 
 ## Explore the outcome
 
@@ -829,6 +835,8 @@ pretty_summary(
 
 After the join, the map data has *2,803* county rows, the same number as the counts, since a county can have one row for each jurisdiction group and victim race, and their records add up to *15,766*, so none were lost when the shapes were joined, shifted, and turned into center points.
 
+:::
+
 Now I'll map the county center points in two panels, one for each jurisdiction group, with each point sized by its number of records and filled by victim race, over the shifted state outlines. 
 
 ```{r jurisdiction-map-plot}
@@ -907,6 +915,8 @@ ggsave(
 The Surrounding Area panel holds *2,897* records and the Within Jurisdiction panel holds *12,869*, so the second map is far denser. In both panels, most circles sit eastward, with a second cluster in California and Arizona, and the largest Black circles appear in the South and in large Midwestern cities.
 
 <br>
+
+::: {.content-hidden when-profile="book"}
 
 ## Check correlation between predictors
 
@@ -1179,11 +1189,15 @@ The Black proportion of female victims ranges from *82.8*% in the District of Co
 
 <br>
 
+:::
+
 ## Conclusion
 
 The analysis data is complete except for *2,897* missing agency population values. Since *35.7*% of its victims are Black, the model must outperform the *64.3*% accuracy achieved by always predicting "Not Black." However, Black and Not Black victims differ most in agency population. The proportion of Black victims also varies by jurisdiction group (*36.7*% versus *31.2*%) and by state (*0*% to *82.8*%). No pair of predictors is correlated strongly enough to prevent the model from separating their effects, so the data is ready for logistic regression in the modeling script.
 
 <br>
+
+::: {.content-hidden when-profile="book"}
 
 ## Miscellaneous: List the package versions
 
@@ -1233,3 +1247,5 @@ sessioninfo::session_info()
 ``` 
 
 <br>
+
+:::
