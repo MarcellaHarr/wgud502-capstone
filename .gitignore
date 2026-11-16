@@ -16,3 +16,10 @@ data/raw/
 # Quarto render output
 scripts/*.html
 scripts/*_files/
+
+# Quarto book build files
+book/_book/
+book/.quarto/
+book/_cleaning.qmd
+book/_analysis.qmd
+book/_modeling.qmd
