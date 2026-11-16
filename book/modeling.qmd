@@ -1,0 +1,26 @@
+# Model Data Build: Rough & Full Model {.unnumbered}
+
+::: {.lead}
+Logistic Regression Modeling
+:::
+
+```{r}
+#| label: setup-modeling
+#| include: false
+
+#== set project root for here() ==
+# (Monteagudo, 2024)
+here::i_am("book/modeling.qmd")
+
+#== call the demo hooks ==
+# (Buck, 2025; Olumide, 2025)
+source(
+  here::here(
+    "book",
+    "R",
+    "demo-hooks.R"
+  )
+)
+```
+
+{{< include _modeling.qmd >}}

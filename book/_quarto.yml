@@ -1,0 +1,51 @@
+# Quarto book project (Quarto, n.d., "Book Structure"; "Project Scripts"; "HTML Options")
+project: 
+  type: book
+  output-dir: _book
+  pre-render: R/make-partials.R
+
+profile: 
+  default: book
+
+book:
+  title: "Capstone Project"
+  subtitle: "Weather Conditions, Agency Population, and Location in Predicting the Race of Female Homicide Victims"
+  author: "Marcella L. Harris"
+  date: today
+  repo-url: https://github.com/MarcellaHarr/wgud502-capstone
+  search:
+    copy-button: true
+    show-item-context: tree
+  chapters:
+    - index.qmd
+    - cleaning.qmd
+    - analysis.qmd
+    - modeling.qmd
+    - references.qmd
+
+bibliography: ../scripts/references.bib
+csl: ../scripts/apa-numeric-superscript-brackets.csl
+
+format:
+  html:
+    html-math-method: mathjax
+    highlight-style: nord
+    theme:
+      light: lux
+      dark: darkly
+    css: custom_styles.css
+    toc: true
+    toc-depth: 5
+    toc-expand: 2
+    toc-title: "Contents"
+    smooth-scroll: true
+    page-layout: full
+    grid:
+      body-width: 975px
+    code-copy: true
+
+execute:
+  freeze: auto
+
+editor:
+  render-on-save: true

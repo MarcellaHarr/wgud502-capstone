@@ -1,0 +1,73 @@
+/* Capstone Task 3 CSS File (Martin, 2024) */
+
+/* Inner Scrollbar */
+.sidebar.margin-sidebar {
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -webkit-scrollbar-width: none;
+}
+
+/* Links */
+a {
+    color: #73a1a1;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+a:hover {
+    color: #a18a73;
+}
+
+/* TOC links */
+div.sidebar-item-container .active,
+div.sidebar-item-container .show>.nav-link,
+div.sidebar-item-container .sidebar-link>code {
+    color: #f6b89e;
+}
+
+div.sidebar-item-container a:hover {
+    color: #e2d5d5;
+}
+
+/* Contents menu */
+.sidebar nav[role=doc-toc] ul>li>a.active,
+.sidebar nav[role=doc-toc] ul>li>ul>li>a.active {
+    border-left: 1px solid #e2d5d5;
+    color: #e2d5d5 !important;
+}
+
+.sidebar nav[role=doc-toc] ul>li a:hover,
+.sidebar nav[role=doc-toc] ul>li>ul>li a:hover {
+    color: #f6b89e !important;
+}
+
+/* Custom elements */
+mark.vocab {
+    color: #cc9696;
+    background-color: transparent;
+}
+
+.panel-tabset {
+    margin-bottom: 2.25rem;
+}
+
+/* Search Term Highlighting */
+.search-target-highlight {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffcc00;
+    padding-left: 4px;
+    animation: fadeHighlight 2s ease-out;
+}
+
+@keyframes fadeHighlight {
+    from {
+        background-color: #fffae6;
+    }
+
+    to {
+        background-color: transparent;
+    }
+}
+
+/* End of file */

@@ -1,0 +1,26 @@
+# Data Exploration Analysis {.unnumbered}
+
+::: {.lead}
+Summaries, Tables, & Plots
+:::
+
+```{r}
+#| label: setup-analysis
+#| include: false
+
+#== set project root for here() ==
+# (Monteagudo, 2024)
+here::i_am("book/analysis.qmd")
+
+#== call the demo hooks ==
+# (Buck, 2025; Olumide, 2025)
+source(
+  here::here(
+    "book",
+    "R",
+    "demo-hooks.R"
+  )
+)
+```
+
+{{< include _analysis.qmd >}}

@@ -1,0 +1,26 @@
+# Cleaning Script {.unnumbered}
+
+::: {.lead}
+Data Cleaning Rebuild — Raw to Final Master Dataset
+:::
+
+```{r}
+#| label: setup-cleaning
+#| include: false
+
+#== set project root for here() ==
+# (Monteagudo, 2024)
+here::i_am("book/cleaning.qmd")
+
+#== call the demo hooks ==
+# (Buck, 2025; Olumide, 2025)
+source(
+  here::here(
+    "book",
+    "R",
+    "demo-hooks.R"
+  )
+)
+```
+
+{{< include _cleaning.qmd >}}

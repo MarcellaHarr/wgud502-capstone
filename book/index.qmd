@@ -1,0 +1,46 @@
+<br>
+
+<br>
+
+# Welcome {.unnumbered}
+
+::: {.lead}
+This is a summary report and walkthrough of my capstone project at **Western Governors University**. This final stage of my capstone project will satisfy points A-K in the rubric.
+:::
+
+<br>
+
+## Research Question
+
+::: {.lead appearance="simple"}
+**"**Among female homicide victims, can weather conditions, agency population, and location predict whether the victim is Black or not Black?"**"**
+:::
+
+---
+
+<br>
+
+## What's Included
+
+::: {.card}
+- 🧹 Cleaning walkthrough: merging the homicide, agency, and weather data
+- 📊 Analysis walkthrough: exploring the outcome and the predictors
+- 📈 Modeling walkthrough: logistic regression, evaluation, and practical significance
+- 📚 References: the sources cited in the scripts
+:::
+
+<br>
+
+## Getting Started
+
+::: {.lead appearance="simple"}
+Let's start with the cleaning script!
+:::
+
+[Begin Here >>](cleaning.qmd){.btn .btn-primary .btn-sm}
+
+<br>
+
+#### Project Repository
+
+[GitHub Repository](https://github.com/MarcellaHarr/wgud502-capstone){.btn .btn-outline-secondary .btn-sm}
