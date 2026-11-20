@@ -23,3 +23,7 @@ book/.quarto/
 book/_cleaning.qmd
 book/_analysis.qmd
 book/_modeling.qmd
+
+# Final datasets
+!data/processed/homicide_final.parquet
+!data/processed/homicide_modeling.parquet
