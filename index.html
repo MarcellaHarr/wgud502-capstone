@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Marcella L. Harris">
-<meta name="dcterms.date" content="2026-11-16">
+<meta name="dcterms.date" content="2026-11-21">
 
 <title>Capstone Project</title>
 <style>
@@ -45,7 +45,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-3e18b3acf60f17f609d210e892373514.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-64ac0ea8960e56d0d36a105beec6d6fa.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-dark-6db67090b17037dfbc1bb68279a7131e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
 <link href="site_libs/bootstrap/bootstrap-3e18b3acf60f17f609d210e892373514.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
@@ -323,9 +323,13 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#welcome" id="toc-welcome" class="nav-link active" data-scroll-target="#welcome">Welcome</a>
   <ul>
   <li><a href="#research-question" id="toc-research-question" class="nav-link" data-scroll-target="#research-question">Research Question</a></li>
+  <li><a href="#why-i-asked-it" id="toc-why-i-asked-it" class="nav-link" data-scroll-target="#why-i-asked-it">Why I Asked It</a></li>
+  <li><a href="#scope" id="toc-scope" class="nav-link" data-scroll-target="#scope">Scope</a></li>
+  <li><a href="#how-it-was-built" id="toc-how-it-was-built" class="nav-link" data-scroll-target="#how-it-was-built">How It Was Built</a></li>
   <li><a href="#whats-included" id="toc-whats-included" class="nav-link" data-scroll-target="#whats-included">What’s Included</a></li>
   <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started">Getting Started</a>
   <ul>
+  <li><a href="#cleaning-notebook" id="toc-cleaning-notebook" class="nav-link" data-scroll-target="#cleaning-notebook">Cleaning Notebook</a></li>
   <li><a href="#project-repository" id="toc-project-repository" class="nav-link" data-scroll-target="#project-repository">Project Repository</a></li>
   </ul></li>
   </ul></li>
@@ -356,7 +360,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 16, 2026</p>
+      <p class="date">November 21, 2026</p>
     </div>
   </div>
   
@@ -373,39 +377,85 @@ ul.task-list li input[type="checkbox"] {
 <section id="welcome" class="level1 unnumbered">
 <h1 class="unnumbered">Welcome</h1>
 <div class="lead">
-<p>This is a summary report and walkthrough of my capstone project at <strong>Western Governors University</strong>. This final stage of my capstone project will satisfy points A-K in the rubric.</p>
+<p>This is a summary report and walkthrough of my capstone project at <strong>Western Governors University</strong>.</p>
 </div>
 <p><br></p>
-<section id="research-question" class="level2">
-<h2 class="anchored" data-anchor-id="research-question">Research Question</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="https://www.pexels.com/photo/line-of-standing-woman-with-afro-hairstyle-18236930/" target="_blank"><img src="./images/david-eluwole.jpg" title="Group of African women" class="img-fluid figure-img"></a></p>
+<figcaption>Photo by David Eluwole from Pexels</figcaption>
+</figure>
+</div>
+<p><br></p>
+<section id="research-question" class="level3">
+<h3 class="anchored" data-anchor-id="research-question">Research Question</h3>
 <div class="lead" data-appearance="simple">
-<p><strong>“<strong>Among female homicide victims, can weather conditions, agency population, and location predict whether the victim is Black or not Black?”</strong>”</strong></p>
+<p><strong>“Among female homicide victims, can weather conditions, agency population, and location predict whether the victim is Black or not Black?”</strong></p>
 </div>
 <hr>
 <p><br></p>
 </section>
-<section id="whats-included" class="level2">
-<h2 class="anchored" data-anchor-id="whats-included">What’s Included</h2>
-<div class="card">
+<section id="why-i-asked-it" class="level3">
+<h3 class="anchored" data-anchor-id="why-i-asked-it">Why I Asked It</h3>
+<p>Other studies have linked hot weather to more violent crime, but these relationships haven’t been studied among female homicide victims.</p>
+<p><br></p>
+</section>
+<section id="scope" class="level3">
+<h3 class="anchored" data-anchor-id="scope">Scope</h3>
+<div class="card" style="border-top: none;">
 <ul>
-<li>🧹 Cleaning walkthrough: merging the homicide, agency, and weather data</li>
-<li>📊 Analysis walkthrough: exploring the outcome and the predictors</li>
-<li>📈 Modeling walkthrough: logistic regression, evaluation, and practical significance</li>
-<li>📚 References: the sources cited in the scripts</li>
+<li>15,766 records of female homicide victims whose race is known, from 2017 through 2020, across all 50 states and D.C.</li>
+<li>Four public sources: homicide records from the Murder Accountability Project, agency populations from DataLumos, daily weather from the Open-Meteo weather API, and state coordinates from Kaggle</li>
+<li>Associations only: the project doesn’t claim that weather or agency size causes differences in victim race</li>
 </ul>
 </div>
 <p><br></p>
 </section>
-<section id="getting-started" class="level2">
-<h2 class="anchored" data-anchor-id="getting-started">Getting Started</h2>
+<section id="how-it-was-built" class="level3">
+<h3 class="anchored" data-anchor-id="how-it-was-built">How It Was Built</h3>
+<p>I followed the CRoss-Industry Standard Process for Data Mining (CRISP-DM) and did the work in R, in Positron, across three Quarto notebooks: the first cleans and merges the raw data, the second explores it, and the third builds and evaluates the model.</p>
+<p><br></p>
+</section>
+<section id="whats-included" class="level3">
+<h3 class="anchored" data-anchor-id="whats-included">What’s Included</h3>
+<div class="card" style="border-top: none; border-left: none;">
+<dl>
+<dt><code>Cleaning</code></dt>
+<dd>
+merging the homicide, agency, and weather data
+</dd>
+<dt><code>Analysis</code></dt>
+<dd>
+exploring the outcome and the predictors
+</dd>
+<dt><code>Modeling</code></dt>
+<dd>
+logistic regression, evaluation, and practical significance
+</dd>
+<dt><code>References</code></dt>
+<dd>
+the sources cited in the scripts
+</dd>
+</dl>
+</div>
+<p><br></p>
+<p><br></p>
+<hr>
+</section>
+<section id="getting-started" class="level3">
+<h3 class="anchored" data-anchor-id="getting-started">Getting Started</h3>
+<p><br></p>
+<section id="cleaning-notebook" class="level4">
+<h4 class="anchored" data-anchor-id="cleaning-notebook">Cleaning Notebook</h4>
 <div class="lead" data-appearance="simple">
 <p>Let’s start with the cleaning script!</p>
 </div>
 <p><a href="./cleaning.html" class="btn btn-primary btn-sm">Begin Here &gt;&gt;</a></p>
 <p><br></p>
+</section>
 <section id="project-repository" class="level4">
 <h4 class="anchored" data-anchor-id="project-repository">Project Repository</h4>
-<p><a href="https://github.com/MarcellaHarr/wgud502-capstone" class="btn btn-outline-secondary btn-sm">GitHub Repository</a></p>
+<p><a href="https://github.com/MarcellaHarr/wgud502-capstone" class="btn btn-outline-secondary btn-sm" target="_blank">GitHub Repository</a></p>
 
 
 </section>

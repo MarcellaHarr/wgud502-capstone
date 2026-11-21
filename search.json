@@ -4,37 +4,7 @@
     "href": "index.html",
     "title": "Capstone Project",
     "section": "",
-    "text": "Welcome",
-    "crumbs": [
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#research-question",
-    "href": "index.html#research-question",
-    "title": "Capstone Project",
-    "section": "Research Question",
-    "text": "Research Question\n\n“Among female homicide victims, can weather conditions, agency population, and location predict whether the victim is Black or not Black?””",
-    "crumbs": [
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#whats-included",
-    "href": "index.html#whats-included",
-    "title": "Capstone Project",
-    "section": "What’s Included",
-    "text": "What’s Included\n\n\n🧹 Cleaning walkthrough: merging the homicide, agency, and weather data\n📊 Analysis walkthrough: exploring the outcome and the predictors\n📈 Modeling walkthrough: logistic regression, evaluation, and practical significance\n📚 References: the sources cited in the scripts",
-    "crumbs": [
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#getting-started",
-    "href": "index.html#getting-started",
-    "title": "Capstone Project",
-    "section": "Getting Started",
-    "text": "Getting Started\n\nLet’s start with the cleaning script!\n\nBegin Here &gt;&gt;\n\n\nProject Repository\nGitHub Repository",
+    "text": "Welcome\n\nThis is a summary report and walkthrough of my capstone project at Western Governors University.\n\n\n\n\n\nPhoto by David Eluwole from Pexels\n\n\n\n\nResearch Question\n\n“Among female homicide victims, can weather conditions, agency population, and location predict whether the victim is Black or not Black?”\n\n\n\n\n\nWhy I Asked It\nOther studies have linked hot weather to more violent crime, but these relationships haven’t been studied among female homicide victims.\n\n\n\nScope\n\n\n15,766 records of female homicide victims whose race is known, from 2017 through 2020, across all 50 states and D.C.\nFour public sources: homicide records from the Murder Accountability Project, agency populations from DataLumos, daily weather from the Open-Meteo weather API, and state coordinates from Kaggle\nAssociations only: the project doesn’t claim that weather or agency size causes differences in victim race\n\n\n\n\n\nHow It Was Built\nI followed the CRoss-Industry Standard Process for Data Mining (CRISP-DM) and did the work in R, in Positron, across three Quarto notebooks: the first cleans and merges the raw data, the second explores it, and the third builds and evaluates the model.\n\n\n\nWhat’s Included\n\n\nCleaning\n\nmerging the homicide, agency, and weather data\n\nAnalysis\n\nexploring the outcome and the predictors\n\nModeling\n\nlogistic regression, evaluation, and practical significance\n\nReferences\n\nthe sources cited in the scripts\n\n\n\n\n\n\n\n\nGetting Started\n\n\nCleaning Notebook\n\nLet’s start with the cleaning script!\n\nBegin Here &gt;&gt;\n\n\n\nProject Repository\nGitHub Repository",
     "crumbs": [
       "Welcome"
     ]
@@ -134,7 +104,7 @@
     "href": "references.html",
     "title": "References",
     "section": "",
-    "text": "1. Gardner, J. (2023). Publishing content in quarto using conditionals and if/else code flow –   jim. https://jimgar.github.io/posts/quarto-code-conditionals/post.html\n\n\n2. Quarto. (n.d.). HTML options – quarto. Retrieved https://quarto.org/docs/reference/formats/html.html\n\n\n3. Monteagudo, J. (2024). Don’t be an absolutist. Use the here package for reproducible workflows | JP monteagudo believes in you. https://doi.org/https://doi.org/10.59350/4a9fr-acc34\n\n\n4. Wickham, H., Henry, L., & Posit-Software-PBC. (n.d.). Functional programming tools • purrr. Tidyverse. Retrieved https://purrr.tidyverse.org/\n\n\n5. cderv. (2023). Setting fig.alt using knitr::knit_hooks - general - posit community. In Posit Community. https://forum.posit.co/t/setting-fig-alt-using-knitr-knit-hooks/174159/2\n\n\n6. howardbaek. (2023). Setting fig.alt using knitr::knit_hooks - general - posit community. In Posit Community. https://forum.posit.co/t/setting-fig-alt-using-knitr-knit-hooks/174159\n\n\n7. Burchill, Z. (2020). Knitr tricks i learned the hard way • zachary burchill. https://www.zachburchill.ml/knitr_tricks/\n\n\n8. statistishdan. (2021). Re-use r markdown chunks in a function - publishing your results - posit community. In Posit Community. https://forum.posit.co/t/re-use-r-markdown-chunks-in-a-function/111128\n\n\n9. RLadies+_Global, & Ryan, J. (2024). (9918) r-ladies d.c - parameterized reporting using quarto - jadey ryan - YouTube. In YouTube. https://www.youtube.com/watch?v=MKjz_xkMgxY\n\n\n10. Prabhakaran, S. (2026). Purrr pwalk() in r: Side effects over parallel lists. https://r-statistics.co/purrr-pwalk-in-R.html\n\n\n11. Martin, G. (2024). RPubs - quarto - CSS. In RPubs. https://rpubs.com/drgregmartin/1266676\n\n\n12. Quarto. (n.d.). Project scripts – quarto. Retrieved https://quarto.org/docs/projects/scripts.html\n\n\n13. Quarto. (n.d.). Book structure – quarto. Retrieved https://quarto.org/docs/books/book-structure.html\n\n\n14. Olumide, S. (2025). Data cleaning essentials with r. In Statology. https://www.statology.org/data-cleaning-essentials-with-r/\n\n\n15. Buck, S. (2025). (7280) r custom functions - YouTube. In YouTube. https://www.youtube.com/watch?v=Aze_MLiBgp4",
+    "text": "1. Eluwole, D. (2023). Line of standing woman with afro hairstyle · free stock photo. In Pexels. https://www.pexels.com/photo/line-of-standing-woman-with-afro-hairstyle-18236930/\n\n\n2. cscheid. (2024). Quarto-cli/src/resources/formats/html/bootstrap/themes/lux.scss at main · quarto-dev/quarto-cli. https://github.com/quarto-dev/quarto-cli/blob/main/src/resources/formats/html/bootstrap/themes/lux.scss\n\n\n3. Quarto. (n.d.). More about quarto themes – quarto. Retrieved https://quarto.org/docs/output-formats/html-themes-more\n\n\n4. Çetinkaya-Rundel, M. (2022). Dark mode – a quarto tip a day. In Posit. https://mine-cetinkaya-rundel.github.io/quarto-tip-a-day/posts/17-dark-mode/\n\n\n5. Quarto. (n.d.). HTML theming – quarto. Retrieved https://quarto.org/docs/output-formats/html-themes.html\n\n\n6. Park, T. (n.d.). Bootswatch: Lux [bootstrap theme]. Bootswatch. Retrieved https://bootswatch.com/lux/\n\n\n7. Gardner, J. (2023). Publishing content in quarto using conditionals and if/else code flow –   jim. https://jimgar.github.io/posts/quarto-code-conditionals/post.html\n\n\n8. Quarto. (n.d.). HTML options – quarto. Retrieved https://quarto.org/docs/reference/formats/html.html\n\n\n9. Monteagudo, J. (2024). Don’t be an absolutist. Use the here package for reproducible workflows | JP monteagudo believes in you. https://doi.org/https://doi.org/10.59350/4a9fr-acc34\n\n\n10. Wickham, H., Henry, L., & Posit-Software-PBC. (n.d.). Functional programming tools • purrr. Tidyverse. Retrieved https://purrr.tidyverse.org/\n\n\n11. cderv. (2023). Setting fig.alt using knitr::knit_hooks - general - posit community. In Posit Community. https://forum.posit.co/t/setting-fig-alt-using-knitr-knit-hooks/174159/2\n\n\n12. howardbaek. (2023). Setting fig.alt using knitr::knit_hooks - general - posit community. In Posit Community. https://forum.posit.co/t/setting-fig-alt-using-knitr-knit-hooks/174159\n\n\n13. Burchill, Z. (2020). Knitr tricks i learned the hard way • zachary burchill. https://www.zachburchill.ml/knitr_tricks/\n\n\n14. statistishdan. (2021). Re-use r markdown chunks in a function - publishing your results - posit community. In Posit Community. https://forum.posit.co/t/re-use-r-markdown-chunks-in-a-function/111128\n\n\n15. RLadies+_Global, & Ryan, J. (2024). (9918) r-ladies d.c - parameterized reporting using quarto - jadey ryan - YouTube. In YouTube. https://www.youtube.com/watch?v=MKjz_xkMgxY\n\n\n16. Prabhakaran, S. (2026). Purrr pwalk() in r: Side effects over parallel lists. https://r-statistics.co/purrr-pwalk-in-R.html\n\n\n17. Martin, G. (2024). RPubs - quarto - CSS. In RPubs. https://rpubs.com/drgregmartin/1266676\n\n\n18. Quarto. (n.d.). Project scripts – quarto. Retrieved https://quarto.org/docs/projects/scripts.html\n\n\n19. Quarto. (n.d.). Book structure – quarto. Retrieved https://quarto.org/docs/books/book-structure.html\n\n\n20. Olumide, S. (2025). Data cleaning essentials with r. In Statology. https://www.statology.org/data-cleaning-essentials-with-r/\n\n\n21. Buck, S. (2025). (7280) r custom functions - YouTube. In YouTube. https://www.youtube.com/watch?v=Aze_MLiBgp4",
     "crumbs": [
       "References"
     ]
