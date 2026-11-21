@@ -1,4 +1,6 @@
-# Quarto book project (Quarto, n.d., "Book Structure"; "Project Scripts"; "HTML Options")
+# Quarto book project 
+# (Quarto, n.d., "Book Structure"; "Project Scripts"; "HTML Options")
+# (Çetinkaya-Rundel, 2022; Quarto, n.d., "HTML Theming")
 project: 
   type: book
   output-dir: _book
@@ -32,7 +34,7 @@ format:
     highlight-style: nord
     theme:
       light: lux
-      dark: darkly
+      dark: [lux, lux-dark.scss]
     css: custom_styles.css
     toc: true
     toc-depth: 5

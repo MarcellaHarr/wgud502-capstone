@@ -1,0 +1,62 @@
+// Capstone Task 3 SCSS File
+
+/*-- scss:defaults --*/
+
+// Lux dark-mode colors 
+// (Park, n.d., _variables.scss, lines 13 and 19)
+// (Bootstrap, n.d., "Bootswatch Sass Theme Files"; cscheid, 2024)
+$body-bg: #1a1a1a; // Lux $gray-900, Bootstrap's default dark background
+$body-color: #eceeef; // Lux $gray-300, Bootstrap's default dark text
+
+// Lux sets headings to $gray-900 
+// (Park, n.d., _variables.scss, line 72)
+$headings-color: #eceeef; // Lux $gray-300
+
+// Code blocks 
+// (Quarto, n.d.)
+$code-block-bg-alpha: -.9;
+
+/*-- scss:rules --*/
+
+// Navigation Link
+.nav-page a:hover {
+    color: #b48ead;
+}
+
+// Horizontal line
+hr {
+    color: #f6b89e;
+}
+
+// Dark button styles
+// (Park, n.d., _bootswatch.scss, lines 109-112 and 120-127)
+.btn-primary {
+    --bs-btn-bg: #b48ead;
+    --bs-btn-hover-bg: #{$black};
+}
+
+.btn-outline-secondary {
+    color: #eceeef;
+    border-color: #f6b89e;
+}
+
+.btn-outline-secondary:not([disabled]):not(.disabled):hover {
+    background-color: #b48ead;
+}
+
+// Card border color
+.card {
+    --bs-card-border-color: #f6b89e;
+}
+
+// Code background color
+p>code:not(.sourceCode),
+code {
+    color: #b48ead;
+    background-color: transparent;
+}
+
+// Pre-Code color styles .cell-output .cell-output-stdout
+pre {
+    color: #f6b89e;
+}
