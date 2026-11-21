@@ -3,7 +3,8 @@ nocite: |
     @QuartoBooks1a, @QuartoBooks1b, @QuartoBooks1c, @Martin2024, 
     @PrabhakaranS2026h,@RLadiesGlobal2024, @statistishdan2021, @Burchill2020, 
     @howardbaek2023, @cderv2023, @Wickham2026e, @Buck2025, @Olumide2025, 
-    @Monteagudo2024, @Gardner2023
+    @Monteagudo2024, @Gardner2023, @Park, @QuartoBooks1d, @etinkaya-Rundel2022,
+    @QuartoBooks1e, @cscheid2024, @Eluwole2023
 ---
 
 # References {.unnumbered}
