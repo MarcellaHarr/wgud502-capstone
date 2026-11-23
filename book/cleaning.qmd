@@ -4,8 +4,8 @@
 Data Cleaning Rebuild — Raw to Final Master Dataset
 :::
 
-```{r}
-#| label: setup-cleaning
+```{r setup-cleaning}
+#| label: 00-setup-cleaning
 #| include: false
 
 #== set project root for here() ==
@@ -14,13 +14,13 @@ here::i_am("book/cleaning.qmd")
 
 #== call the demo hooks ==
 # (Buck, 2025; Olumide, 2025)
-source(
-  here::here(
-    "book",
-    "R",
-    "demo-hooks.R"
-  )
-)
+# source(
+#   here::here(
+#     "book",
+#     "R",
+#     "demo-hooks.R"
+#   )
+# )
 ```
 
 {{< include _cleaning.qmd >}}

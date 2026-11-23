@@ -4,8 +4,8 @@
 Logistic Regression Modeling
 :::
 
-```{r}
-#| label: setup-modeling
+```{r setup-cleaning}
+#| label: 02-setup-modeling
 #| include: false
 
 #== set project root for here() ==
@@ -14,13 +14,13 @@ here::i_am("book/modeling.qmd")
 
 #== call the demo hooks ==
 # (Buck, 2025; Olumide, 2025)
-source(
-  here::here(
-    "book",
-    "R",
-    "demo-hooks.R"
-  )
-)
+# source(
+#   here::here(
+#     "book",
+#     "R",
+#     "demo-hooks.R"
+#   )
+# )
 ```
 
 {{< include _modeling.qmd >}}
