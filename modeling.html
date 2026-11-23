@@ -65,7 +65,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./references.html" rel="next">
+<link href="./thoughts.html" rel="next">
 <link href="./analysis.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -340,6 +340,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./thoughts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Final Thoughts</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">References</span></a>
   </div>
@@ -354,12 +360,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Contents</h2>
    
   <ul>
-  <li><a href="#split-the-data" id="toc-split-the-data" class="nav-link active" data-scroll-target="#split-the-data">Split the data</a></li>
-  <li><a href="#build-the-full-model" id="toc-build-the-full-model" class="nav-link" data-scroll-target="#build-the-full-model">Build the full model</a></li>
+  <li><a href="#training-testing-set" id="toc-training-testing-set" class="nav-link active" data-scroll-target="#training-testing-set">Training &amp; testing set</a>
+  <ul>
+  <li><a href="#split-the-data" id="toc-split-the-data" class="nav-link" data-scroll-target="#split-the-data">split the data</a></li>
+  </ul></li>
+  <li><a href="#training-set" id="toc-training-set" class="nav-link" data-scroll-target="#training-set">Training set</a>
+  <ul>
+  <li><a href="#build-recipe" id="toc-build-recipe" class="nav-link" data-scroll-target="#build-recipe">build recipe</a></li>
+  <li><a href="#fit-the-full-model" id="toc-fit-the-full-model" class="nav-link" data-scroll-target="#fit-the-full-model">fit the full model</a></li>
+  </ul></li>
+  <li><a href="#testing-set" id="toc-testing-set" class="nav-link" data-scroll-target="#testing-set">Testing set</a>
+  <ul>
+  <li><a href="#evaluate-metrics" id="toc-evaluate-metrics" class="nav-link" data-scroll-target="#evaluate-metrics">evaluate metrics</a></li>
+  </ul></li>
+  <li><a href="#practical-significance" id="toc-practical-significance" class="nav-link" data-scroll-target="#practical-significance">Practical significance</a>
+  <ul>
+  <li><a href="#predictor-practicalness" id="toc-predictor-practicalness" class="nav-link" data-scroll-target="#predictor-practicalness">predictor practicalness</a></li>
+  </ul></li>
   <li><a href="#model-visuals" id="toc-model-visuals" class="nav-link" data-scroll-target="#model-visuals">Model visuals</a>
   <ul>
-  <li><a href="#odds-ratios" id="toc-odds-ratios" class="nav-link" data-scroll-target="#odds-ratios">Odds Ratios</a></li>
-  <li><a href="#predicted-proportions" id="toc-predicted-proportions" class="nav-link" data-scroll-target="#predicted-proportions">Predicted Proportions</a></li>
+  <li><a href="#odds-ratio-forest-plot" id="toc-odds-ratio-forest-plot" class="nav-link" data-scroll-target="#odds-ratio-forest-plot">Odds ratio forest plot</a></li>
+  </ul></li>
+  <li><a href="#predicted-proportions" id="toc-predicted-proportions" class="nav-link" data-scroll-target="#predicted-proportions">Predicted Proportions</a>
+  <ul>
+  <li><a href="#practical-significance-plot" id="toc-practical-significance-plot" class="nav-link" data-scroll-target="#practical-significance-plot">practical significance plot</a></li>
   </ul></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
   </ul>
@@ -408,9 +432,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sessioninfo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><br></p>
-<section id="split-the-data" class="level2">
-<h2 class="anchored" data-anchor-id="split-the-data">Split the data</h2>
+<section id="training-testing-set" class="level2">
+<h2 class="anchored" data-anchor-id="training-testing-set">Training &amp; testing set</h2>
 <p>Before the full model is built, the records are split into a training set (11,824 of the records) for building the model and a testing set (the remaining 3,942) for checking how it does on records it hasn’t seen. The split keeps the share of Black victims about the same in both sets.</p>
+<section id="split-the-data" class="level4">
+<h4 class="anchored" data-anchor-id="split-the-data">split the data</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the modeling data into training and testing sets.</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -1440,9 +1466,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>As you can see, both sets have nearly the same mix: <em>0.64318</em> Not Black and <em>0.35682</em> Black in the training set, and <em>0.64307</em> Not Black and <em>0.35693</em> Black in the testing set, close to the full dataset. The model will be built on the training set only, and the testing set stays untouched until the model is evaluated.</p>
 <p><br></p>
 </section>
-<section id="build-the-full-model" class="level2">
-<h2 class="anchored" data-anchor-id="build-the-full-model">Build the full model</h2>
+</section>
+<section id="training-set" class="level2">
+<h2 class="anchored" data-anchor-id="training-set">Training set</h2>
 <p>The recipe lists the outcome and the six predictors. It fills the missing agency population values with the median from the training set, and turns jurisdiction location into a 0/1 column the model can read.</p>
+<section id="build-recipe" class="level4">
+<h4 class="anchored" data-anchor-id="build-recipe">build recipe</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify the preprocessing steps, and set up the outcome and the six predictors.</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -1503,6 +1532,9 @@ predictor: 6</code></pre>
 <pre><code>• Dummy variables from: recipes::all_nominal_predictors()</code></pre>
 </div>
 </div>
+</section>
+<section id="fit-the-full-model" class="level4">
+<h4 class="anchored" data-anchor-id="fit-the-full-model">fit the full model</h4>
 <p>The recipe and the logistic regression are bundled into one workflow and fit on the training set, so the same steps will be applied when the model is checked on the testing set.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the full logistic regression on the training set.</span></span>
@@ -2077,6 +2109,12 @@ predictor: 6</code></pre>
 </div>
 <p>The full model converged (TRUE). Five predictors have positive estimates: temperature, humidity, rain, agency population, and Within Jurisdiction. Higher values for these predictors are associated with a greater chance that the victim is Black. Records from Within Jurisdiction are also more likely to involve a Black victim than records from the Surrounding Area. Snowfall has a negative estimate. All six predictors have p-values below .05. The model’s performance on the testing set is discussed next.</p>
 <p><br></p>
+</section>
+</section>
+<section id="testing-set" class="level2">
+<h2 class="anchored" data-anchor-id="testing-set">Testing set</h2>
+<section id="evaluate-metrics" class="level4">
+<h4 class="anchored" data-anchor-id="evaluate-metrics">evaluate metrics</h4>
 <p>Now it’s time to score the predictions against the benchmarks set before testing, an accuracy above the <em>64.3%</em> always Not Black baseline and a ROC AUC above <em>0.5</em>, along with sensitivity, specificity, and the J-index to show how well each outcome level is identified.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Score the testing-set predictions with different performance metrics.</span></span>
@@ -2605,6 +2643,12 @@ predictor: 6</code></pre>
 </div>
 <p>The model’s accuracy is <em>0.63978</em>, which is below the <em>0.64307</em> baseline, and its ROC AUC is <em>0.64748</em>, which is above <em>0.5</em>. Sensitivity is <em>0.092395</em>, specificity is <em>0.94359</em>, and the J-index is <em>0.035985</em>, so the model correctly labels most Not Black victims but identifies few Black victims. Because both benchmarks had to be met, the model does not meet the success criterion.</p>
 <p><br></p>
+</section>
+</section>
+<section id="practical-significance" class="level2">
+<h2 class="anchored" data-anchor-id="practical-significance">Practical significance</h2>
+<section id="predictor-practicalness" class="level4">
+<h4 class="anchored" data-anchor-id="predictor-practicalness">predictor practicalness</h4>
 <p>Next, since the numeric predictors don’t have groups, I’ll build two hypothetical records for each one that differ only in that predictor, one at its 1st quartile and one at its 3rd quartile. The other numeric predictors stay at their medians, and jurisdiction location is set to Within Jurisdiction, the group with most of the records. Then I’ll predict the proportion of Black victims for each record and compare each predictor’s change with the 5.5-point difference.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict the proportion of Black victims as each numeric predictor rises from the first to third quartile.</span></span>
@@ -3247,11 +3291,12 @@ predictor: 6</code></pre>
 <p>Moving each numeric predictor from its 1st to its 3rd quartile changes the predicted proportion of Black victims by about <em>2.2</em> percentage points for temperature, <em>8.0</em> for humidity, <em>2.9</em> for rainfall, <em>-0.4</em> for snowfall, and <em>1.2</em> for agency population. Only humidity changes the proportion by more than the 5.5-point difference, so humidity is the only predictor large enough to count as practically significant by this cutoff, while the others are statistically significant but fall below it.</p>
 <p><br></p>
 </section>
+</section>
 <section id="model-visuals" class="level2">
 <h2 class="anchored" data-anchor-id="model-visuals">Model visuals</h2>
-<section id="odds-ratios" class="level5">
-<h5 class="anchored" data-anchor-id="odds-ratios">Odds Ratios</h5>
 <p>Then, I’ll plot each predictor’s odds ratio with its 95% confidence interval as a forest plot. Because the numeric predictors are measured in different units, such as one person, one degree, or one inch, I’ll scale each numeric predictor’s odds ratio and confidence interval to its quartile range, the change from its 1st to its 3rd quartile (pakalla, 2020; Noah, 2020), so every odds ratio describes the same low-to-high change used in the practical-significance check. Jurisdiction location stays as is, comparing Within Jurisdiction with Surrounding Area.</p>
+<section id="odds-ratio-forest-plot" class="level4">
+<h4 class="anchored" data-anchor-id="odds-ratio-forest-plot">Odds ratio forest plot</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the odds ratio.</span></span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3331,10 +3376,14 @@ predictor: 6</code></pre>
 <span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Scaled to each predictor’s quartile range, all six 95% confidence intervals exclude 1, indicating that every predictor is statistically significant at an alpha of .05, consistent with the p-values in the odds-ratios chunk. Relative humidity has the largest odds ratio: <em>1.409</em> (<em>1.335</em> to <em>1.487</em>) for a <em>12.419</em>-point increase. Snowfall is the only predictor with an odds ratio below 1: <em>0.983</em> (<em>0.976</em> to <em>0.989</em>) for a <em>0.551</em>-inch increase. The jurisdiction location interval (<em>1.115</em> to <em>1.369</em>) differs from the interval in the odds-ratios table by less than 0.001. The predictors rank in the same order as the practical-significance changes, with humidity showing the largest increase and snowfall the only decrease.</p>
+<p><br></p>
 </section>
-<section id="predicted-proportions" class="level5">
-<h5 class="anchored" data-anchor-id="predicted-proportions">Predicted Proportions</h5>
+</section>
+<section id="predicted-proportions" class="level2">
+<h2 class="anchored" data-anchor-id="predicted-proportions">Predicted Proportions</h2>
 <p>Finally, I’ll show the practical-significance results in a paired plot. For each predictor, a line connects the predicted proportion of Black victims at its low value (1st quartile, or Surrounding Area for jurisdiction location) to the predicted proportion at its high value (3rd quartile, or Within Jurisdiction). The steeper the line, the greater the change in the expected proportion associated with that predictor.</p>
+<section id="practical-significance-plot" class="level4">
+<h4 class="anchored" data-anchor-id="practical-significance-plot">practical significance plot</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot each predictor's predicted proportion of Black victims from low to high.</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -3869,8 +3918,8 @@ predictor: 6</code></pre>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./references.html" class="pagination-link" aria-label="References">
-        <span class="nav-page-text">References</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./thoughts.html" class="pagination-link" aria-label="Final Thoughts">
+        <span class="nav-page-text">Final Thoughts</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

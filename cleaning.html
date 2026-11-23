@@ -340,6 +340,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./thoughts.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Final Thoughts</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./references.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">References</span></a>
   </div>
@@ -355,7 +361,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#load-the-raw-data" id="toc-load-the-raw-data" class="nav-link active" data-scroll-target="#load-the-raw-data">Load the raw data</a></li>
-  <li><a href="#filter-victims-and-recode-victim-and-offender-race" id="toc-filter-victims-and-recode-victim-and-offender-race" class="nav-link" data-scroll-target="#filter-victims-and-recode-victim-and-offender-race">Filter victims and recode victim and offender race</a></li>
+  <li><a href="#filter-victims-and-recode-victim-and-offender-race" id="toc-filter-victims-and-recode-victim-and-offender-race" class="nav-link" data-scroll-target="#filter-victims-and-recode-victim-and-offender-race">Filter victims and recode victim and offender race</a>
+  <ul>
+  <li><a href="#victim-race-recode" id="toc-victim-race-recode" class="nav-link" data-scroll-target="#victim-race-recode">victim race recode</a></li>
+  </ul></li>
+  <li><a href="#match-municipal-police-to-local-police-departments" id="toc-match-municipal-police-to-local-police-departments" class="nav-link" data-scroll-target="#match-municipal-police-to-local-police-departments">Match municipal police to local police departments</a>
+  <ul>
+  <li><a href="#final-municipal-join" id="toc-final-municipal-join" class="nav-link" data-scroll-target="#final-municipal-join">final municipal join</a></li>
+  </ul></li>
+  <li><a href="#build-and-save-the-modeling-data" id="toc-build-and-save-the-modeling-data" class="nav-link" data-scroll-target="#build-and-save-the-modeling-data">Build and save the modeling data</a>
+  <ul>
+  <li><a href="#modeling-dataset" id="toc-modeling-dataset" class="nav-link" data-scroll-target="#modeling-dataset">modeling dataset</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -403,10 +420,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rmarkdown)</span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sessioninfo)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p><br></p>
 </section>
 <section id="filter-victims-and-recode-victim-and-offender-race" class="level2">
 <h2 class="anchored" data-anchor-id="filter-victims-and-recode-victim-and-offender-race">Filter victims and recode victim and offender race</h2>
 <p>Now, I’ll narrow the <strong>homicide DF</strong> to female victims with a known race, using the <code>filter()</code> to keep the “Female” records in <em>VicSex</em> and drop the “Unknown” records in <em>VicRace</em>. Then, the <code>mutate()</code> with the <code>case_when()</code> to collapse the three smaller race groups, such as Asian, into one “Other Ethnic” group in <em>victim_race_collapsed</em>, and the <code>if_else()</code> turns that into a two-group <em>victim_racial_construct</em>: Black or Not Black. The result is saved as the <strong>recoded DF</strong>, and the <code>nrow()</code> and my custom <code>three_col_check()</code> confirm its size and categories.</p>
+<section id="victim-race-recode" class="level4">
+<h4 class="anchored" data-anchor-id="victim-race-recode">victim race recode</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Recode victim race/ethnic into binary constructs.</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -475,6 +495,13 @@ $third_summary
 </div>
 </div>
 <p>The <strong>recoded DF</strong> has 197,147 records. Since the earlier victim counts showed 199,567 female victims, dropping “Unknown” race removed 2,420 more. In <em>victim_racial_construct</em>, 72,849 records are Black and 124,298 are Not Black, which is the Other Ethnic and White counts in <em>victim_race_collapsed</em> added together.</p>
+<p><br></p>
+</section>
+</section>
+<section id="match-municipal-police-to-local-police-departments" class="level2">
+<h2 class="anchored" data-anchor-id="match-municipal-police-to-local-police-departments">Match municipal police to local police departments</h2>
+<section id="final-municipal-join" class="level4">
+<h4 class="anchored" data-anchor-id="final-municipal-join">final municipal join</h4>
 <p>Finally, the <code>left_join()</code> matches the <strong>municipal DF</strong> to the <strong>deduplicated DF</strong> on <em>city_match</em> and <em>state</em>, followed by the same row-count and <em>agency_population</em> NA proportion checks.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Deduplicated agency and municipal police subset join.</span></span>
@@ -512,8 +539,13 @@ $third_summary
 </div>
 </div>
 <p>The <strong>municipal DF</strong> has <strong>141,096</strong> records, and the <strong>joined DF</strong> has <strong>141,096</strong>, with no many-to-many warning this time. More importantly, the NA proportion is <em>0.1409962</em>, or about 14.1%, down from about 84% before deduplicating, since rows without a population were dropped before the join, so a record now goes without one only when its city and state have no local police department row that has one.</p>
-<p><br></p>
+</section>
+</section>
+<section id="build-and-save-the-modeling-data" class="level2">
+<h2 class="anchored" data-anchor-id="build-and-save-the-modeling-data">Build and save the modeling data</h2>
 <p>To finish, I’ll save the <strong>modeling DF</strong> with <code>arrow::write_parquet()</code> as its own Parquet file in the processed data folder, separate from the <strong>final DF</strong>’s file. Then, I’ll read it back with <code>arrow::read_parquet()</code> and get its number of rows and columns with <code>dim()</code>.</p>
+<section id="modeling-dataset" class="level4">
+<h4 class="anchored" data-anchor-id="modeling-dataset">modeling dataset</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save the modeling dataset as a Parquet file.</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -545,6 +577,7 @@ $third_summary
 <p>In conclusion, the saved file has <em>15,766</em> rows and <em>35</em> columns, one more than the <em>34</em> columns of the <strong>final DF</strong>, since it adds <em>jurisdiction_match</em>.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
