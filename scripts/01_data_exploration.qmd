@@ -581,6 +581,8 @@ Black victims' records have higher medians than Not Black victims' records for a
 
 Each record is labeled Within Jurisdiction if the homicide matches an agency with a recorded population, and Surrounding Area if it does not. Next, I'll calculate the share of Black and Not Black victims in each jurisdiction group.
 
+#### victim racial proportions table
+
 ```{r jurisdiction-by-outcome}
 #| label: 01-jurisdiction-by-outcome
 #| warning: true
