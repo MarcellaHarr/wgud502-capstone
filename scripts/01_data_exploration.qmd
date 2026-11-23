@@ -140,6 +140,8 @@ The raw weather file reports temperature in *°F* (Fahrenheit), rainfall and sno
 
 Next, I'll summarize the five numeric predictors, count the missing values in the outcome and all six predictors, and count the records by year and the number of states to see how complete the data is and which years and places it covers.
 
+#### summary statistics
+
 ```{r summary-stats}
 #| label: 01-summary-stats
 #| warning: true
@@ -573,6 +575,8 @@ Black victims' records have higher medians than Not Black victims' records for a
 
 <br>
 
+:::
+
 ## Compare jurisdiction by outcome
 
 Each record is labeled Within Jurisdiction if the homicide matches an agency with a recorded population, and Surrounding Area if it does not. Next, I'll calculate the share of Black and Not Black victims in each jurisdiction group.
@@ -611,6 +615,8 @@ jurisdiction_ratio %>%
 ```
 
 Within Jurisdiction records are *36.7*% Black, compared with *31.2*% of Surrounding Area records, so the Black share is about 5.5 percentage points lower when a homicide didn't match an agency with a recorded population.
+
+::: {.content-hidden when-profile="book"}
 
 To map the jurisdiction groups, I'll first count records in each county by jurisdiction group and victim race. Then I’ll separate each county's name from its state so I can match it to the county map shapes.
 
@@ -838,6 +844,8 @@ After the join, the map data has *2,803* county rows, the same number as the cou
 :::
 
 Now I'll map the county center points in two panels, one for each jurisdiction group, with each point sized by its number of records and filled by victim race, over the shifted state outlines. 
+
+#### jurisdiction map plot
 
 ```{r jurisdiction-map-plot}
 #| label: 01-jurisdiction-map-plot

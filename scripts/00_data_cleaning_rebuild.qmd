@@ -234,13 +234,16 @@ three_col_check(
 ```
 
 None of the three tables has an NA row, and each one adds up to 894,636 records, the full **homicide DF**. The largest *VicEthnic* group is "Unknown or not reported," with 501,898 records, more than half of the total. That label is also worded differently from *VicRace* and *VicSex*, which both use "Unknown." In *VicRace*, the two largest groups are White and Black.
-:::
 
 <br>
+
+:::
 
 ## Filter victims and recode victim and offender race
 
 Now, I'll narrow the **homicide DF** to female victims with a known race, using the `filter()` to keep the "Female" records in *VicSex* and drop the "Unknown" records in *VicRace*. Then, the `mutate()` with the `case_when()` to collapse the three smaller race groups, such as Asian, into one "Other Ethnic" group in *victim_race_collapsed*, and the `if_else()` turns that into a two-group *victim_racial_construct*: Black or Not Black. The result is saved as the **recoded DF**, and the `nrow()` and my custom `three_col_check()` confirm its size and categories.
+
+#### victim race recode
 
 ```{r victim-race-recode}
 #| label: 00-victim-race-recode
@@ -701,7 +704,11 @@ The **recoded DF** still has 30 columns because *state_abb* was added and *State
 
 <br>
 
+:::
+
 ## Match municipal police to local police departments
+
+::: {.content-hidden when-profile="book"}
 
 Now, I'll join the agency details to the homicide records one agency type at a time, starting with municipal police, the largest group. The `filter()` keeps the *"Municipal police"* records from the **recoded DF**, and the `rename()` changes *Agency* to *city*, saving them as the **municipal DF** (`homicide_municipal`). Then, a second `filter()` keeps the *"LOCAL POLICE DEPARTMENT"* rows from the **derived DF** as the **local agency DF** (`geojson_municipal`), and the `left_join()` matches the two on city and state since municipal police departments are named after the city they serve, saving the **joined DF** (`municipal_joined`). The `nrow()` counts compare the rows before and after the join, and `sum` with `is.na` divided by `nrow` gives the share of records with no *agency_name*.
 
@@ -1018,6 +1025,10 @@ sum(
 
 Here the results show that the NA count is *0*, so every date parsed again, and the rebuilt **derived DF** now has true NAs in place of the -999 values.
 
+:::
+
+::: {.content-hidden when-profile="book"}
+
 ### Deduplicate and rejoin the municipal police records
 
 With the placeholders fixed, I'll rebuild the **local agency DF** from the new **derived DF** with the same `filter()` and the `mutate()` with `toupper()` and `trimws()`, then rerun with a `left_join`. This time, the NA proportion checks *agency_population* instead of *agency_name*, since the -999 rows had a name but no population, so *agency_name* hid how much was really missing.
@@ -1154,7 +1165,10 @@ geojson_municipal_dedup %>%
 ```
 
 The **deduplicated DF** has **10,867** rows, and the duplicate check is **0**, so each city and state pair now has one row.
+
 :::
+
+#### final municipal join
 
 Finally, the `left_join()` matches the **municipal DF** to the **deduplicated DF** on *city_match* and *state*, followed by the same row-count and *agency_population* NA proportion checks.
 
@@ -1191,6 +1205,7 @@ sum(
 The **municipal DF** has **141,096** records, and the **joined DF** has **141,096**, with no many-to-many warning this time. More importantly, the NA proportion is *0.1409962*, or about 14.1%, down from about 84% before deduplicating, since rows without a population were dropped before the join, so a record now goes without one only when its city and state have no local police department row that has one.
 
 ::: {.content-hidden when-profile="book"}
+
 ## Match sheriff records to sheriff's offices by county
 
 Next up are the sheriff records. This join needs a county name on both sides since a sheriff's office serves a whole county rather than a single city. But first, I'll look at how each side stores its counties. The `distinct()` with `slice_sample(n = 15)` pulls 15 random values from the **homicide DF**'s *CNTYFIPS* column and from the **agency DF**'s *COUNTY* and *COUNTYFIPS* columns. Since there's no `set.seed()`, the sample changes each time the script runs.
@@ -3146,7 +3161,11 @@ For the unsolved cases (*"No"*), *2,619* of the 2,630 records, or *99.6%*, have 
 
 <br>
 
+:::
+
 ## Build and save the modeling data
+
+::: {.content-hidden when-profile="book"}
 
 From the **reloaded DF**, the `mutate()` with `case_when` adds a new column, *jurisdiction_match*. When *agency_population* is NA, the record gets *"Surrounding Area,"* and `TRUE` catches every other record, giving it *"Within Jurisdiction."* That's saved as the **modeling DF** (`homicide_modeling_df`), and `nrow` and `count` show the number of records and the size of each group. I added this column so the records with no agency population are marked as their own group instead of only showing NA.
 
@@ -3218,11 +3237,14 @@ homicide_modeling_df %>%
 ```
 
 The missing-population check shows that all of its *2,897* records are *"Surrounding Area,"* and the non-missing check shows that all of its *12,869* records are *"Within Jurisdiction,"* so *jurisdiction_match* is just a label for whether *agency_population* is missing. In the *"Surrounding Area"* group, *31.2%* of the victims are Black, compared to *36.7%* in the *"Within Jurisdiction"* group; simply put, Black victims make up a somewhat bigger portion of the *"Within Jurisdiction"* records.
-:::
 
 ### Wrap Up
 
+:::
+
 To finish, I'll save the **modeling DF** with `arrow::write_parquet()` as its own Parquet file in the processed data folder, separate from the **final DF**'s file. Then, I'll read it back with `arrow::read_parquet()` and get its number of rows and columns with `dim()`.
+
+#### modeling dataset
 
 ```{r modeling-data-to-parquet}
 #| label: 00-modeling-data-to-parquet

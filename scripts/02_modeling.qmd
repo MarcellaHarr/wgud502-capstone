@@ -225,9 +225,11 @@ After running, the model showed that it converged. It predicted 4.5% of victims 
 
 <br>
 
-## Split the data
+## Training & testing set
 
 Before the full model is built, the records are split into a training set (11,824 of the records) for building the model and a testing set (the remaining 3,942) for checking how it does on records it hasn't seen. The split keeps the share of Black victims about the same in both sets.
+
+#### split the data
 
 ```{r split-data}
 #| label: 02-split-data
@@ -296,9 +298,11 @@ As you can see, both sets have nearly the same mix: *0.64318* Not Black and *0.3
 
 <br>
 
-## Build the full model
+## Training set
 
 The recipe lists the outcome and the six predictors. It fills the missing agency population values with the median from the training set, and turns jurisdiction location into a 0/1 column the model can read.
+
+#### build recipe
 
 ```{r build-recipe}
 #| label: 02-build-recipe
@@ -332,6 +336,8 @@ homicide_recipe <- recipes::recipe(
 #== display recipe ==
 homicide_recipe
 ```
+
+#### fit the full model
 
 The recipe and the logistic regression are bundled into one workflow and fit on the training set, so the same steps will be applied when the model is checked on the testing set.
 
@@ -390,9 +396,9 @@ The full model converged (TRUE). Five predictors have positive estimates: temper
 
 <br>
 
-::: {.content-hidden when-profile="book"}
+## Testing set
 
-## Evaluate the model
+::: {.content-hidden when-profile="book"}
 
 Now the testing set is used for the first time. The fitted workflow applies the same recipe and model to the 3,942 testing records, so the model is checked on records it hasn't seen.
 
@@ -443,6 +449,8 @@ The testing set kept all *3,942* records and now has *38* columns because the `a
 
 :::
 
+#### evaluate metrics
+
 Now it's time to score the predictions against the benchmarks set before testing, an accuracy above the *64.3%* always Not Black baseline and a ROC AUC above *0.5*, along with sensitivity, specificity, and the J-index to show how well each outcome level is identified.
 
 ```{r evaluate-metrics}
@@ -480,9 +488,9 @@ test_results %>%
 
 The model's accuracy is *0.63978*, which is below the *0.64307* baseline, and its ROC AUC is *0.64748*, which is above *0.5*. Sensitivity is *0.092395*, specificity is *0.94359*, and the J-index is *0.035985*, so the model correctly labels most Not Black victims but identifies few Black victims. Because both benchmarks had to be met, the model does not meet the success criterion.
 
-<br>
-
 ::: {.content-hidden when-profile="book"}
+
+<br>
 
 ## Coefficients
 
@@ -551,9 +559,13 @@ For the predictor's p-value they all are below alpha (.05):
 
 None of the 95% confidence intervals include 1, which agrees with the p-values, so I reject the null hypothesis for all six predictors. The intercept isn't a predictor, so it isn't part of this test. Even so, the model's accuracy on the testing set (*0.63978*) fell below the *0.64307* baseline, so the predictors are linked to whether the victim is Black, but not strongly enough to classify individual victims better than always guessing Not Black.
 
+:::
+
 <br>
 
 ## Practical significance
+
+::: {.content-hidden when-profile="book"}
 
 The p-values show that every predictor is associated with the outcome, but they don’t indicate whether each association is large enough to matter. To assess this, I'll compare the change in the expected proportion of Black victims for each predictor with the 5.5-point difference between the two jurisdiction groups identified in the exploratory analysis. First, I'll calculate the 1st quartile, median, and 3rd quartile of each numeric predictor in the training set. These values represent low, middle, and high values for each predictor and will show how much the expected proportion of Black victims changes as each predictor moves from low to high.
 
@@ -671,6 +683,8 @@ jurisdiction_predictions %>%
 With the weather and agency population held at their medians, the model predicts that *33.2*% of Surrounding Area records and *38.0*% of Within Jurisdiction records are Black, a difference of about *4.8* percentage points. This is smaller than the 5.5-point difference seen in the exploratory analysis, so jurisdiction location on its own falls below the practical-significance cutoff, even though it is statistically significant.
 
 :::
+
+#### predictor practicalness
 
 Next, since the numeric predictors don't have groups, I'll build two hypothetical records for each one that differ only in that predictor, one at its 1st quartile and one at its 3rd quartile. The other numeric predictors stay at their medians, and jurisdiction location is set to Within Jurisdiction, the group with most of the records. Then I'll predict the proportion of Black victims for each record and compare each predictor's change with the 5.5-point difference.
 
@@ -892,9 +906,9 @@ ggsave(
 
 The model's average predicted probability of being Black ranges from *0.17436* in the lowest bin to *0.54855* in the highest. Only the highest bin’s average exceeds the 0.5 classification cutoff, helping explain why the model classified just *273* testing records as Black. In bins 6 through 9, the points fall above the diagonal (e.g., bin 8 has a predicted value of *0.42029* and an observed value of *0.48477*), indicating that the model underpredicts the proportion of Black victims in those bins. Bins 1, 2, and 10 fall below the diagonal.
 
-:::
+## Odds ratios
 
-##### Odds Ratios
+:::
 
 Then, I'll plot each predictor's odds ratio with its 95% confidence interval as a forest plot. Because the numeric predictors are measured in different units, such as one person, one degree, or one inch, I'll scale each numeric predictor's odds ratio and confidence interval to its quartile range, the change from its 1st to its 3rd quartile (pakalla, 2020; Noah, 2020), so every odds ratio describes the same low-to-high change used in the practical-significance check. Jurisdiction location stays as is, comparing Within Jurisdiction with Surrounding Area.
 
@@ -1008,6 +1022,8 @@ odds_ratio_table %>%
 
 :::
 
+#### odds ratio forest plot
+
 ```{r odds-ratio-forest-plot}
 #| label: 02-odds-ratio-forest-plot
 #| warning: true
@@ -1088,7 +1104,9 @@ ggsave(
 
 Scaled to each predictor's quartile range, all six 95% confidence intervals exclude 1, indicating that every predictor is statistically significant at an alpha of .05, consistent with the p-values in the odds-ratios chunk. Relative humidity has the largest odds ratio: *1.409* (*1.335* to *1.487*) for a *12.419*-point increase. Snowfall is the only predictor with an odds ratio below 1: *0.983* (*0.976* to *0.989*) for a *0.551*-inch increase. The jurisdiction location interval (*1.115* to *1.369*) differs from the interval in the odds-ratios table by less than 0.001. The predictors rank in the same order as the practical-significance changes, with humidity showing the largest increase and snowfall the only decrease.
 
-##### Predicted Proportions
+<br>
+
+## Predicted Proportions
 
 Finally, I'll show the practical-significance results in a paired plot. For each predictor, a line connects the predicted proportion of Black victims at its low value (1st quartile, or Surrounding Area for jurisdiction location) to the predicted proportion at its high value (3rd quartile, or Within Jurisdiction). The steeper the line, the greater the change in the expected proportion associated with that predictor.
 
@@ -1149,6 +1167,8 @@ practical_long_table
 ```
 
 :::
+
+#### practical significance plot
 
 ```{r practical-significance-plot}
 #| label: 02-practical-significance-plot
