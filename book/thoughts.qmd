@@ -1,0 +1,32 @@
+# Final Thoughts {.unnumbered}
+
+[![Photo by Michael Kyule from Pexels](./images/michael-kyule.jpg "Three Black Women outside standing in between cars")](https://unsplash.com/photos/three-women-standing-next-to-a-white-car-p-HfYp3mzUI){target="_blank"}
+
+<br>
+
+::: {.lead}
+Findings and Implications
+:::
+
+### Key Findings
+
+::: {.card style="border-top: none;"}
+- Weather conditions, agency population, and jurisdiction location were all linked to a female homicide victim being Black, but not strongly enough to classify individual victims better than always guessing Not Black.
+- Only relative humidity was also practically significant, raising the predicted proportion of Black victims by about 8 percentage points.
+- The findings describe associations, not causes, and the data undercount female homicides.
+:::
+
+<br>
+
+### Recommendations
+
+::: {.card style="border-top: none;"}
+- Violence prevention programs could plan outreach to Black women in the months and places where humid conditions are common.
+- Future studies should add other factors, such as neighborhood conditions, since weather, agency population, and jurisdiction location alone could not classify individual victims.
+:::
+
+<br>
+
+::: {.lead appearance="simple"}
+Even though the model fell short of its benchmark, the findings remained valid because the methods were carried out correctly.
+:::

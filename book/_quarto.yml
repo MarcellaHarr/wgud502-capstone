@@ -23,6 +23,7 @@ book:
     - cleaning.qmd
     - analysis.qmd
     - modeling.qmd
+    - thoughts.qmd
     - references.qmd
 
 bibliography: ../scripts/references.bib
